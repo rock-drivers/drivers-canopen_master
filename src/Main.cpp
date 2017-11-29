@@ -1,9 +1,9 @@
 #include <iostream>
-#include <canopen_protocol/Dummy.hpp>
+#include <canopen_master/Dummy.hpp>
 
 int main(int argc, char** argv)
 {
-    canopen_protocol::DummyClass dummyClass;
+    canopen_master::DummyClass dummyClass;
     dummyClass.welcome();
 
     return 0;

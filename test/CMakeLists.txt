@@ -1,3 +1,2 @@
-rock_testsuite(test_suite suite.cpp
-   test_Dummy.cpp
-   DEPS canopen_protocol)
+rock_gtest(suite suite.cpp test_StateMachine.cpp
+   DEPS canopen_master)

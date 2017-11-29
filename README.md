@@ -1,4 +1,4 @@
-canopen_protocol
+canopen_master
 =============
 CANOpen protocol implementation
 

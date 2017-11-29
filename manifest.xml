@@ -16,4 +16,5 @@
   -->
   <depend package="base/cmake" />
   <depend package="base/types" />
+  <depend package="drivers/canbus" />
 </package>
