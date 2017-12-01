@@ -35,12 +35,6 @@ namespace canopen_master
         uint8_t const* data, uint32_t size
     );
 
-    struct DeviceObject
-    {
-        uint16_t id;
-        uint8_t  subId;
-        uint8_t raw[8];
-    };
 };
 
 #endif
