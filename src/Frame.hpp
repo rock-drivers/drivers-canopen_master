@@ -16,14 +16,14 @@ namespace canopen_master
     {
         FUNCTION_EMERGENCY     =  0x080,
 
-        FUNCTION_PDO1_RECEIVE  =  0x180,
-        FUNCTION_PDO1_TRANSMIT =  0x200,
-        FUNCTION_PDO2_RECEIVE  =  0x280,
-        FUNCTION_PDO2_TRANSMIT =  0x300,
-        FUNCTION_PDO3_RECEIVE  =  0x380,
-        FUNCTION_PDO3_TRANSMIT =  0x400,
-        FUNCTION_PDO4_RECEIVE  =  0x480,
-        FUNCTION_PDO4_TRANSMIT =  0x500,
+        FUNCTION_PDO0_RECEIVE  =  0x180,
+        FUNCTION_PDO0_TRANSMIT =  0x200,
+        FUNCTION_PDO1_RECEIVE  =  0x280,
+        FUNCTION_PDO1_TRANSMIT =  0x300,
+        FUNCTION_PDO2_RECEIVE  =  0x380,
+        FUNCTION_PDO2_TRANSMIT =  0x400,
+        FUNCTION_PDO3_RECEIVE  =  0x480,
+        FUNCTION_PDO3_TRANSMIT =  0x500,
 
         FUNCTION_SDO_RECEIVE   =  0x580,
         FUNCTION_SDO_TRANSMIT  =  0x600,
@@ -32,6 +32,8 @@ namespace canopen_master
 
         FUNCTION_MASK          =  0x780
     };
+
+    static const int MAX_PDO = 3;
 
     enum NODE_STATE
     {

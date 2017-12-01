@@ -25,6 +25,11 @@ namespace canopen_master
         using std::runtime_error::runtime_error;
     };
 
+    struct ObjectSizeMismatch : public std::runtime_error
+    {
+        using std::runtime_error::runtime_error;
+    };
+
     struct Unsupported : public std::runtime_error
     {
         using std::runtime_error::runtime_error;
@@ -50,6 +55,12 @@ namespace canopen_master
             , objectId(objectId)
             , subId(subId)
             , rawCode(rawCode) {}
+    };
+
+    struct PDOMappingTooBig : public std::runtime_error
+    {
+        PDOMappingTooBig()
+            : std::runtime_error("trying to create a PDO mapping bigger than 8 bytes") {}
     };
 }
 

@@ -104,6 +104,12 @@ TEST(StateMachine, download) {
     );
 }
 
+TEST(StateMachine, getFailsOnADeclaredButUnreadObject) {
+    StateMachine machine(2);
+    machine.declare(0x1801, 3, 2);
+    ASSERT_THROW(machine.get<uint16_t>(0x1801, 3), ObjectNotRead);
+}
+
 TEST(StateMachine, downloadOfADeclaredObject) {
     StateMachine machine(2);
     uint16_t value = 0x3FE;
@@ -119,7 +125,7 @@ TEST(StateMachine, downloadOfADeclaredObject) {
 TEST(StateMachine, downloadFailsIfDeclaredSizeMismatches) {
     StateMachine machine(2);
     machine.declare(0x1801, 3, 4);
-    ASSERT_THROW(machine.download(0x1801, 3, static_cast<uint16_t>(0)), InvalidObjectType);
+    ASSERT_THROW(machine.download(0x1801, 3, static_cast<uint16_t>(0)), ObjectSizeMismatch);
 }
 
 TEST(StateMachine, processUploadReply) {
@@ -169,5 +175,80 @@ TEST(StateMachine, ignoresSDOAbortForAnotherNode)
     msg.data[6] = 0x03;
     msg.data[7] = 0x05;
     StateMachine machine(2);
+    ASSERT_EQ(false, machine.process(msg));
+}
+
+TEST(StateMachine, configurePDOMapping)
+{
+    PDOMapping mappings;
+    mappings.add(0x6000, 0x02, 1);
+    mappings.add(0x6401, 0x01, 2);
+    StateMachine machine(2);
+    vector<canbus::Message> msg = machine.configurePDOMapping(1, mappings);
+    ASSERT_EQ(3, msg.size());
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[0].data + 1));
+    ASSERT_EQ(0,          msg[0].data[3]);
+    ASSERT_EQ(2,          msg[0].data[4]);
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[1].data + 1));
+    ASSERT_EQ(1,          msg[1].data[3]);
+    ASSERT_EQ(0x60000208, fromLittleEndian<uint32_t>(msg[1].data + 4));
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[2].data + 1));
+    ASSERT_EQ(2,          msg[2].data[3]);
+    ASSERT_EQ(0x64010110, fromLittleEndian<uint32_t>(msg[2].data + 4));
+}
+
+TEST(StateMachine, configurePDOMappingValidatesTheSizesMatchesDeclaredMappings)
+{
+    PDOMapping mappings;
+    mappings.add(0x6000, 0x02, 1);
+    StateMachine machine(2);
+    machine.declare(0x6000, 0x02, 2);
+    ASSERT_THROW(machine.configurePDOMapping(1, mappings),
+        ObjectSizeMismatch);
+}
+
+TEST(StateMachine, processPDO)
+{
+    PDOMapping mappings;
+    mappings.add(0x6000, 0x02, 1);
+    mappings.add(0x6401, 0x01, 2);
+    StateMachine machine(2);
+    machine.declarePDOMapping(1, mappings);
+
+    canbus::Message msg;
+    msg.time = base::Time::now();
+    msg.can_id = FUNCTION_PDO1_RECEIVE + 2;
+    msg.data[0] = 0x01;
+    msg.data[1] = 0x02;
+    msg.data[2] = 0x03;
+    ASSERT_EQ(true, machine.process(msg));
+    ASSERT_EQ(1, machine.sizeOf(0x6000, 0x02));
+    ASSERT_EQ(2, machine.sizeOf(0x6401, 0x01));
+    ASSERT_EQ(0x01, machine.get<uint8_t>(0x6000, 0x02));
+    ASSERT_EQ(0x0302, machine.get<uint16_t>(0x6401, 0x01));
+}
+
+TEST(StateMachine, processPDOReturnsFalseIfNoMappingExists)
+{
+    StateMachine machine(2);
+
+    canbus::Message msg;
+    msg.time = base::Time::now();
+    msg.can_id = FUNCTION_PDO1_RECEIVE + 2;
+    ASSERT_EQ(false, machine.process(msg));
+}
+
+TEST(StateMachine, processPDOReturnsFalseIfAMappingIsEmpty)
+{
+    StateMachine machine(2);
+    PDOMapping mappings;
+    machine.declarePDOMapping(1, mappings);
+
+    canbus::Message msg;
+    msg.time = base::Time::now();
+    msg.can_id = FUNCTION_PDO1_RECEIVE + 2;
     ASSERT_EQ(false, machine.process(msg));
 }

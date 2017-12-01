@@ -7,6 +7,8 @@
 #include <canmessage.hh>
 #include <canopen_master/Frame.hpp>
 #include <canopen_master/Exceptions.hpp>
+#include <canopen_master/PDOMapping.hpp>
+#include <canopen_master/PDOCommunicationParameters.hpp>
 
 namespace canopen_master
 {
@@ -32,12 +34,14 @@ namespace canopen_master
         };
 
         typedef std::map<ObjectIdentifier, ObjectValue> Dictionary;
+        typedef std::vector<PDOMapping> PDOMappings;
 
         base::Time lastMessageTime;
 
         base::Time lastStateUpdate;
         NODE_STATE state;
 
+        PDOMappings pdoMappings;
         Dictionary dictionary;
         Dictionary::iterator declareInternal(uint16_t objectId, uint8_t subId, uint8_t size);
 
@@ -98,6 +102,11 @@ namespace canopen_master
         /** Test if the given object ID and sub ID has ever been read */
         bool has(uint16_t objectId, uint8_t subId) const;
 
+        /** Returns the size of the given entry in the dictionary
+         * @return the size, or zero if this entry is not defined
+         */
+        uint32_t sizeOf(uint16_t objectId, uint8_t subId) const;
+
         /** Returns the timestamp of the last read value for this object
          *
          * Returns a null time if the object has never been read.
@@ -105,6 +114,13 @@ namespace canopen_master
          * or check availability first with the has method
          */
         base::Time timestamp(uint16_t objectId, uint8_t subId) const;
+
+        /** Returns the SYNC message
+         *
+         * The SYNC message triggers sending the PDOs that have been
+         * configured to
+         */
+        canbus::Message sync() const;
 
         /** Get raw data from a given object */
         uint32_t get(uint16_t objectId, uint16_t subId, uint8_t* data, uint32_t bufferSize) const;
@@ -123,10 +139,28 @@ namespace canopen_master
             return fromLittleEndian<T>(data);
         }
 
+        /** Configure the communication parameters for the given PDO */
+        canbus::Message configurePDOParameters(uint8_t pdoIndex,
+            PDOCommunicationParameters const& parameters);
+
+        /** Configures the mapping for one of the predefined PDOs */
+        std::vector<canbus::Message> configurePDOMapping(uint8_t pdoIndex,
+            PDOMapping const& mapping);
+
+        /** Declare a PDO mapping to the state machine
+         *
+         * After this, the process method will map a PDO message to the
+         * object dictionary.
+         */
+        void declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping);
+
     private:
+        void validatePDOMapping(PDOMapping const& mapping);
         bool processEmergency(canbus::Message const& msg);
         bool processSDOReceive(canbus::Message const& msg);
         bool processHeartbeat(canbus::Message const& msg);
+        bool processPDOReceive(int pdoIndex, canbus::Message const& msg);
+        void setObjectValue(uint16_t objectId, uint8_t subId, base::Time const& time, uint8_t const* data, uint32_t dataSize);
     };
 }
 
