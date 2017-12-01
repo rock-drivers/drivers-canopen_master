@@ -38,6 +38,19 @@ namespace canopen_master
             : std::runtime_error("emergency message received")
             , code(code) {}
     };
+
+    struct SDODomainTransferAborted : public std::runtime_error
+    {
+        const uint16_t objectId;
+        const uint8_t  subId;
+        const uint32_t rawCode;
+
+        SDODomainTransferAborted(uint16_t objectId, uint8_t subId, uint32_t rawCode)
+            : std::runtime_error("SDO domain transfer aborted")
+            , objectId(objectId)
+            , subId(subId)
+            , rawCode(rawCode) {}
+    };
 }
 
 #endif

@@ -94,6 +94,12 @@ bool StateMachine::processHeartbeat(canbus::Message const& msg)
 bool StateMachine::processSDOReceive(canbus::Message const& msg)
 {
     SDOCommand cmd = getSDOCommand(msg);
+    if (cmd.command == SDO_ABORT_DOMAIN_TRANSFER)
+    {
+        parseSDODomainTransferAbort(msg);
+        // never returns
+        return true;
+    }
     if (cmd.command == SDO_INITIATE_DOMAIN_UPLOAD_REPLY)
     {
         if (!cmd.expedited_transfer)

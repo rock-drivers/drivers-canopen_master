@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include <canopen_master/StateMachine.hpp>
+#include <canopen_master/SDO.hpp>
 
 using namespace std;
 using namespace canopen_master;
@@ -136,4 +137,37 @@ TEST(StateMachine, processUploadReply) {
     msg.data[7] = 0x00;
     ASSERT_EQ(true, machine.process(msg));
     ASSERT_EQ(0x3FE, machine.get<uint16_t>(0x1801, 3));
+}
+
+TEST(StateMachine, processSDOAbort)
+{
+    canbus::Message msg;
+    msg.can_id = 0x582;
+    msg.data[0] = static_cast<uint8_t>(SDO_ABORT_DOMAIN_TRANSFER << 5);
+    msg.data[1] = 0xFE;
+    msg.data[2] = 0x03;
+    msg.data[3] = 0x10;
+    msg.data[4] = 0x05;
+    msg.data[5] = 0x00;
+    msg.data[6] = 0x03;
+    msg.data[7] = 0x05;
+
+    StateMachine machine(2);
+    ASSERT_THROW(machine.process(msg), SDODomainTransferAborted);
+}
+
+TEST(StateMachine, ignoresSDOAbortForAnotherNode)
+{
+    canbus::Message msg;
+    msg.can_id = 0x583;
+    msg.data[0] = SDO_ABORT_DOMAIN_TRANSFER;
+    msg.data[1] = 0xFE;
+    msg.data[2] = 0x03;
+    msg.data[3] = 0x10;
+    msg.data[4] = 0x05;
+    msg.data[5] = 0x00;
+    msg.data[6] = 0x03;
+    msg.data[7] = 0x05;
+    StateMachine machine(2);
+    ASSERT_EQ(false, machine.process(msg));
 }

@@ -68,3 +68,11 @@ SDOCommand canopen_master::getSDOCommand(canbus::Message const& msg)
     }
     return cmd;
 }
+
+void canopen_master::parseSDODomainTransferAbort(canbus::Message const& msg)
+{
+    uint16_t objectId = fromLittleEndian<uint16_t>(msg.data + 1);
+    uint8_t  subId    = fromLittleEndian<uint8_t>(msg.data + 3);
+    uint32_t rawCode  = fromLittleEndian<uint32_t>(msg.data + 4);
+    throw SDODomainTransferAborted(objectId, subId, rawCode);
+}

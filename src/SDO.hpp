@@ -35,6 +35,7 @@ namespace canopen_master
         uint8_t const* data, uint32_t size
     );
 
+    void parseSDODomainTransferAbort(canbus::Message const& msg);
 };
 
 #endif
