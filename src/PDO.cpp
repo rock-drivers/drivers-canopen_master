@@ -6,14 +6,14 @@
 using namespace canopen_master;
 
 canbus::Message canopen_master::makePDOCommunicationParametersMessage(
-    uint16_t nodeId, int pdoIndex,
+    bool transmit, uint16_t nodeId, int pdoIndex,
     PDOCommunicationParameters const& parameters)
 {
     uint8_t data[4];
     toLittleEndian(data + 0, parameters.inhibit_time);
     toLittleEndian(data + 2, parameters.timer_period);
     return makeSDOInitiateDomainDownload(
-        nodeId, getPDOParametersObjectId(pdoIndex), 2, data, 4);
+        nodeId, getPDOParametersObjectId(transmit, pdoIndex), 2, data, 4);
 }
 
 bool canopen_master::isPDO(uint16_t functionCode)
@@ -32,19 +32,19 @@ int canopen_master::getPDOIndex(uint16_t functionCode)
     return (functionCode - FUNCTION_PDO0_TRANSMIT) / 0x100;
 }
 
-uint16_t canopen_master::getPDOParametersObjectId(uint8_t pdoIndex)
+uint16_t canopen_master::getPDOParametersObjectId(bool transmit, uint8_t pdoIndex)
 {
-    return 0x1400 + pdoIndex;
+    return (transmit ? 0x1800 : 0x1400) + pdoIndex;
 }
-uint16_t canopen_master::getPDOMappingObjectId(uint8_t pdoIndex)
+uint16_t canopen_master::getPDOMappingObjectId(bool transmit, uint8_t pdoIndex)
 {
-    return 0x1A00 + pdoIndex;
+    return (transmit ? 0x1A00 : 0x1600) + pdoIndex;
 }
 
-std::vector<canbus::Message> canopen_master::makePDOMappingMessages(uint8_t nodeId, uint8_t pdoIndex, PDOMapping const& mapping)
+std::vector<canbus::Message> canopen_master::makePDOMappingMessages(bool transmit, uint8_t nodeId, uint8_t pdoIndex, PDOMapping const& mapping)
 {
     std::vector<canbus::Message> result;
-    uint16_t pdoObjectId = getPDOMappingObjectId(pdoIndex);
+    uint16_t pdoObjectId = getPDOMappingObjectId(transmit, pdoIndex);
 
     uint8_t mappingSize = mapping.mappings.size();
     result.push_back(makeSDOInitiateDomainDownload(nodeId, pdoObjectId, 0, &mappingSize, 1));

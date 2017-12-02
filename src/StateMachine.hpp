@@ -140,11 +140,11 @@ namespace canopen_master
         }
 
         /** Configure the communication parameters for the given PDO */
-        canbus::Message configurePDOParameters(uint8_t pdoIndex,
+        canbus::Message configurePDOParameters(bool transmit, uint8_t pdoIndex,
             PDOCommunicationParameters const& parameters);
 
         /** Configures the mapping for one of the predefined PDOs */
-        std::vector<canbus::Message> configurePDOMapping(uint8_t pdoIndex,
+        std::vector<canbus::Message> configurePDOMapping(bool transmit, uint8_t pdoIndex,
             PDOMapping const& mapping);
 
         /** Declare a PDO mapping to the state machine

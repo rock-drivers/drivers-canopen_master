@@ -184,7 +184,7 @@ TEST(StateMachine, configurePDOMapping)
     mappings.add(0x6000, 0x02, 1);
     mappings.add(0x6401, 0x01, 2);
     StateMachine machine(2);
-    vector<canbus::Message> msg = machine.configurePDOMapping(1, mappings);
+    vector<canbus::Message> msg = machine.configurePDOMapping(true, 1, mappings);
     ASSERT_EQ(3, msg.size());
 
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[0].data + 1));
@@ -206,7 +206,7 @@ TEST(StateMachine, configurePDOMappingValidatesTheSizesMatchesDeclaredMappings)
     mappings.add(0x6000, 0x02, 1);
     StateMachine machine(2);
     machine.declare(0x6000, 0x02, 2);
-    ASSERT_THROW(machine.configurePDOMapping(1, mappings),
+    ASSERT_THROW(machine.configurePDOMapping(true, 1, mappings),
         ObjectSizeMismatch);
 }
 

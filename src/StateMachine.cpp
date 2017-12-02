@@ -232,10 +232,10 @@ void StateMachine::validatePDOMapping(PDOMapping const& mapping)
     }
 }
 
-std::vector<canbus::Message> StateMachine::configurePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping)
+std::vector<canbus::Message> StateMachine::configurePDOMapping(bool transmit, uint8_t pdoIndex, PDOMapping const& mapping)
 {
     validatePDOMapping(mapping);
-    return makePDOMappingMessages(nodeId, pdoIndex, mapping);
+    return makePDOMappingMessages(transmit, nodeId, pdoIndex, mapping);
 }
 
 void StateMachine::declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping)
@@ -250,7 +250,7 @@ void StateMachine::declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping
     pdoMappings[pdoIndex] = mapping;
 }
 
-canbus::Message StateMachine::configurePDOParameters(uint8_t pdoIndex, PDOCommunicationParameters const& parameters)
+canbus::Message StateMachine::configurePDOParameters(bool transmit, uint8_t pdoIndex, PDOCommunicationParameters const& parameters)
 {
-    return makePDOCommunicationParametersMessage(nodeId, pdoIndex, parameters);
+    return makePDOCommunicationParametersMessage(transmit, nodeId, pdoIndex, parameters);
 }
