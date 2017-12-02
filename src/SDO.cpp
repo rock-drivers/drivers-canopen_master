@@ -9,7 +9,7 @@ canbus::Message canopen_master::makeSDOInitiateDomainUpload(uint8_t nodeId, uint
 {
     canbus::Message msg;
     std::memset(&msg, 0, sizeof(msg));
-    msg.can_id = FUNCTION_SDO_TRANSMIT + nodeId;
+    msg.can_id = FUNCTION_SDO_RECEIVE + nodeId;
     msg.data[0] = 0x40;
     msg.data[1] = (objectIndex >> 0) & 0xFF;
     msg.data[2] = (objectIndex >> 8) & 0xFF;
@@ -25,7 +25,7 @@ canbus::Message canopen_master::makeSDOInitiateDomainDownload(uint8_t nodeId, ui
 
     canbus::Message msg;
     std::memset(&msg, 0, sizeof(msg));
-    msg.can_id = FUNCTION_SDO_TRANSMIT + nodeId;
+    msg.can_id = FUNCTION_SDO_RECEIVE + nodeId;
     // Immediate transfer with size
     msg.data[0] = 0x23 | ((4-size) << 2);
     toLittleEndian<uint16_t>(msg.data + 1, objectIndex);

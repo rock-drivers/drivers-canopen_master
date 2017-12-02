@@ -220,7 +220,7 @@ TEST(StateMachine, processPDO)
 
     canbus::Message msg;
     msg.time = base::Time::now();
-    msg.can_id = FUNCTION_PDO1_RECEIVE + 2;
+    msg.can_id = FUNCTION_PDO1_TRANSMIT + 2;
     msg.data[0] = 0x01;
     msg.data[1] = 0x02;
     msg.data[2] = 0x03;
@@ -237,7 +237,7 @@ TEST(StateMachine, processPDOReturnsFalseIfNoMappingExists)
 
     canbus::Message msg;
     msg.time = base::Time::now();
-    msg.can_id = FUNCTION_PDO1_RECEIVE + 2;
+    msg.can_id = FUNCTION_PDO1_TRANSMIT + 2;
     ASSERT_EQ(false, machine.process(msg));
 }
 
@@ -249,6 +249,6 @@ TEST(StateMachine, processPDOReturnsFalseIfAMappingIsEmpty)
 
     canbus::Message msg;
     msg.time = base::Time::now();
-    msg.can_id = FUNCTION_PDO1_RECEIVE + 2;
+    msg.can_id = FUNCTION_PDO1_TRANSMIT + 2;
     ASSERT_EQ(false, machine.process(msg));
 }

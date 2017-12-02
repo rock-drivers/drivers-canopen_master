@@ -71,9 +71,9 @@ bool StateMachine::process(canbus::Message const& msg)
         return processEmergency(msg);
     if (functionCode == FUNCTION_NMT_HEARTBEAT)
         return processHeartbeat(msg);
-    if (functionCode == FUNCTION_SDO_RECEIVE)
+    if (functionCode == FUNCTION_SDO_TRANSMIT)
         return processSDOReceive(msg);
-    if (isPDOReceive(functionCode))
+    if (isPDOTransmit(functionCode))
     {
         int pdoIndex = getPDOIndex(functionCode);
         return processPDOReceive(pdoIndex, msg);

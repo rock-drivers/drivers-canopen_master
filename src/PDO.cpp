@@ -13,23 +13,23 @@ canbus::Message canopen_master::makePDOCommunicationParametersMessage(
     toLittleEndian(data + 0, parameters.inhibit_time);
     toLittleEndian(data + 2, parameters.timer_period);
     return makeSDOInitiateDomainDownload(
-        nodeId, getPDOParametersObjectId(pdoIndex), 0, data, 4);
+        nodeId, getPDOParametersObjectId(pdoIndex), 2, data, 4);
 }
 
 bool canopen_master::isPDO(uint16_t functionCode)
 {
-    return (functionCode >= FUNCTION_PDO0_RECEIVE) &&
-        (functionCode < (FUNCTION_PDO0_RECEIVE + 0x80 * 8));
+    return (functionCode >= FUNCTION_PDO0_TRANSMIT) &&
+        (functionCode < (FUNCTION_PDO0_TRANSMIT + 0x80 * 8));
 }
 
-bool canopen_master::isPDOReceive(uint16_t functionCode)
+bool canopen_master::isPDOTransmit(uint16_t functionCode)
 {
     return isPDO(functionCode) && ((functionCode & 0x80) == 0x80);
 }
 
 int canopen_master::getPDOIndex(uint16_t functionCode)
 {
-    return (functionCode - FUNCTION_PDO0_RECEIVE) / 0x100;
+    return (functionCode - FUNCTION_PDO0_TRANSMIT) / 0x100;
 }
 
 uint16_t canopen_master::getPDOParametersObjectId(uint8_t pdoIndex)

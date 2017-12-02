@@ -12,21 +12,25 @@ namespace canopen_master
         BROADCAST_TIMESTAMP          = 0x100
     };
 
+    /** Function codes in the predefined set
+     *
+     * "Transmit" and "Receive" are as seen from the remote node
+     */
     enum PREDEFINED_FUNCTION_CODES
     {
         FUNCTION_EMERGENCY     =  0x080,
 
-        FUNCTION_PDO0_RECEIVE  =  0x180,
-        FUNCTION_PDO0_TRANSMIT =  0x200,
-        FUNCTION_PDO1_RECEIVE  =  0x280,
-        FUNCTION_PDO1_TRANSMIT =  0x300,
-        FUNCTION_PDO2_RECEIVE  =  0x380,
-        FUNCTION_PDO2_TRANSMIT =  0x400,
-        FUNCTION_PDO3_RECEIVE  =  0x480,
-        FUNCTION_PDO3_TRANSMIT =  0x500,
+        FUNCTION_PDO0_TRANSMIT =  0x180,
+        FUNCTION_PDO0_RECEIVE  =  0x200,
+        FUNCTION_PDO1_TRANSMIT =  0x280,
+        FUNCTION_PDO1_RECEIVE  =  0x300,
+        FUNCTION_PDO2_TRANSMIT =  0x380,
+        FUNCTION_PDO2_RECEIVE  =  0x400,
+        FUNCTION_PDO3_TRANSMIT =  0x480,
+        FUNCTION_PDO3_RECEIVE  =  0x500,
 
-        FUNCTION_SDO_RECEIVE   =  0x580,
-        FUNCTION_SDO_TRANSMIT  =  0x600,
+        FUNCTION_SDO_TRANSMIT  =  0x580,
+        FUNCTION_SDO_RECEIVE   =  0x600,
 
         FUNCTION_NMT_HEARTBEAT =  0x700,
 
