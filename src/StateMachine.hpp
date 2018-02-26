@@ -19,6 +19,39 @@ namespace canopen_master
     public:
         typedef std::pair<uint16_t, uint8_t> ObjectIdentifier;
 
+        enum UPDATE_EVENT
+        {
+            PROCESSED_IGNORED_MESSAGE,
+            PROCESSED_NOT_FOR_ME,
+            PROCESSED_PDO,
+            PROCESSED_PDO_UNEXPECTED,
+            PROCESSED_SDO,
+            PROCESSED_SDO_INITIATE_DOWNLOAD,
+            PROCESSED_SDO_IGNORED_COMMAND,
+            PROCESSED_SDO_UNKNOWN_COMMAND,
+            PROCESSED_HEARTBEAT,
+            PROCESSED_EMERGENCY_NO_ERROR
+        };
+
+        struct Update
+        {
+            UPDATE_EVENT mode;
+            int update_count;
+            ObjectIdentifier updated[8];
+
+            Update();
+            Update(UPDATE_EVENT mode);
+            Update(UPDATE_EVENT mode, uint16_t objectId, uint8_t subId);
+
+            /** Adds an object to the update set */
+            void addUpdate(uint16_t objectId, int8_t subId);
+
+            /** Whether this update has updated objects */
+            bool hasUpdatedObjects() const;
+
+            bool operator ==(Update const& other) const;
+        };
+
     private:
         /** The ID of the node we're talking to
          */
@@ -71,7 +104,7 @@ namespace canopen_master
         uint8_t getNodeID() const;
 
         /** Process a message received from nodeId */
-        bool process(canbus::Message const& msg);
+        Update process(canbus::Message const& msg);
 
         /** Request reading the given dictionary object */
         canbus::Message upload(uint16_t objectId, uint8_t subId) const;
@@ -156,10 +189,10 @@ namespace canopen_master
 
     private:
         void validatePDOMapping(PDOMapping const& mapping);
-        bool processEmergency(canbus::Message const& msg);
-        bool processSDOReceive(canbus::Message const& msg);
-        bool processHeartbeat(canbus::Message const& msg);
-        bool processPDOReceive(int pdoIndex, canbus::Message const& msg);
+        Update processEmergency(canbus::Message const& msg);
+        Update processSDOReceive(canbus::Message const& msg);
+        Update processHeartbeat(canbus::Message const& msg);
+        Update processPDOReceive(int pdoIndex, canbus::Message const& msg);
         void setObjectValue(uint16_t objectId, uint8_t subId, base::Time const& time, uint8_t const* data, uint32_t dataSize);
     };
 }

@@ -59,12 +59,12 @@ uint8_t StateMachine::getNodeID() const
     return nodeId;
 }
 
-bool StateMachine::process(canbus::Message const& msg)
+StateMachine::Update StateMachine::process(canbus::Message const& msg)
 {
     if (canopen_master::getNodeID(msg) == nodeId)
         lastMessageTime = msg.time;
     else
-        return false;
+        return Update(PROCESSED_NOT_FOR_ME);
 
     uint16_t functionCode = getFunctionCode(msg);
     if (functionCode == FUNCTION_EMERGENCY)
@@ -78,71 +78,78 @@ bool StateMachine::process(canbus::Message const& msg)
         int pdoIndex = getPDOIndex(functionCode);
         return processPDOReceive(pdoIndex, msg);
     }
-    return false;
+    return Update();
 }
 
-bool StateMachine::processEmergency(canbus::Message const& msg)
+StateMachine::Update StateMachine::processEmergency(canbus::Message const& msg)
 {
     Emergency em = parseEmergencyMessage(msg);
     if (em.code >> 8 == 0) // "No error" ????
-        return true;
+        return Update(PROCESSED_EMERGENCY_NO_ERROR);
 
     throw EmergencyMessageReceived(em.code);
 }
 
-bool StateMachine::processHeartbeat(canbus::Message const& msg)
+StateMachine::Update StateMachine::processHeartbeat(canbus::Message const& msg)
 {
     state = static_cast<NODE_STATE>(msg.data[0]);
     lastStateUpdate = msg.time;
-    return true;
+    return Update(PROCESSED_HEARTBEAT);
 }
 
-bool StateMachine::processPDOReceive(int pdoIndex, canbus::Message const& msg)
+StateMachine::Update StateMachine::processPDOReceive(int pdoIndex, canbus::Message const& msg)
 {
     if (pdoMappings.size() < pdoIndex + 1u)
-        return false;
+        return Update(PROCESSED_PDO_UNEXPECTED);
     PDOMapping const& mapping = pdoMappings[pdoIndex];
 
+    Update update(PROCESSED_PDO);
     int offset = 0;
     for (const auto m : mapping.mappings)
     {
         setObjectValue(m.objectId, m.subId, msg.time, msg.data + offset, m.size);
         offset += m.size;
+        update.addUpdate(m.objectId, m.subId);
     }
-    return !mapping.mappings.empty();
+    if (update.hasUpdatedObjects()) {
+        return Update(PROCESSED_PDO_UNEXPECTED);
+    }
+    else {
+        return update;
+    }
 }
 
-bool StateMachine::processSDOReceive(canbus::Message const& msg)
+StateMachine::Update StateMachine::processSDOReceive(canbus::Message const& msg)
 {
     SDOCommand cmd = getSDOCommand(msg);
     if (cmd.command == SDO_ABORT_DOMAIN_TRANSFER)
     {
         parseSDODomainTransferAbort(msg);
         // never returns
-        return true;
+        return Update();
     }
     if (cmd.command == SDO_INITIATE_DOMAIN_UPLOAD_REPLY)
     {
         if (!cmd.expedited_transfer)
         {
             std::cerr << "can_master::StateMachine nodeId=" << nodeId << " ignored non-expedited SDO transfer" << std::endl;
-            return false;
+            return Update();
         }
         uint16_t objectId = getSDOObjectID(msg);
         uint8_t  subId    = getSDOObjectSubID(msg);
         setObjectValue(objectId, subId, msg.time, msg.data + 4, cmd.size);
-        return true;
+        return Update(PROCESSED_SDO, objectId, subId);
     }
     else if (cmd.command == SDO_INITIATE_DOMAIN_DOWNLOAD_REPLY)
     {
-        return true;
+        return Update(PROCESSED_SDO_INITIATE_DOWNLOAD);
     }
     else
     {
         std::cerr << "can_master::StateMachine nodeId=" << nodeId << " ignored SDO command " << cmd.command << std::endl;
-        return false;
+        return Update(PROCESSED_SDO_IGNORED_COMMAND);
     }
-    return false;
+    return Update(PROCESSED_SDO_UNKNOWN_COMMAND);
 }
 
 void StateMachine::setObjectValue(uint16_t objectId, uint8_t subId, base::Time const& time, uint8_t const* data, uint32_t dataSize)
@@ -253,4 +260,36 @@ void StateMachine::declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping
 canbus::Message StateMachine::configurePDOParameters(bool transmit, uint8_t pdoIndex, PDOCommunicationParameters const& parameters)
 {
     return makePDOCommunicationParametersMessage(transmit, nodeId, pdoIndex, parameters);
+}
+
+
+StateMachine::Update::Update()
+    : mode(PROCESSED_IGNORED_MESSAGE), update_count(0) {}
+StateMachine::Update::Update(UPDATE_EVENT mode)
+    : mode(mode), update_count(0) {}
+StateMachine::Update::Update(UPDATE_EVENT mode, uint16_t objectId, uint8_t subId)
+    : StateMachine::Update::Update(mode)
+{
+    addUpdate(objectId, subId);
+}
+
+void StateMachine::Update::addUpdate(uint16_t objectId, int8_t subId)
+{
+    updated[update_count] = ObjectIdentifier(objectId, subId);
+    update_count++;
+}
+
+bool StateMachine::Update::hasUpdatedObjects() const
+{
+    return update_count == 0;
+}
+
+bool StateMachine::Update::operator ==(Update const& other) const
+{
+    if (mode != other.mode || update_count != other.update_count)
+        return false;
+    return std::equal(
+        updated, updated + update_count,
+        other.updated
+    );
 }

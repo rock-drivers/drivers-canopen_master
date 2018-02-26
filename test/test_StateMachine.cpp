@@ -5,6 +5,7 @@
 
 using namespace std;
 using namespace canopen_master;
+typedef StateMachine::Update Update;
 using ::testing::ElementsAre;
 
 TEST(StateMachine, hasNoStateBeforeTheFirstMessage)
@@ -19,7 +20,7 @@ TEST(StateMachine, bootupMessageHandling) {
     msg.time = base::Time::now();
     msg.can_id = 0x702;
     msg.data[0] = 0;
-    ASSERT_EQ(true, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_HEARTBEAT), machine.process(msg));
     ASSERT_EQ(true, machine.hasState());
     ASSERT_EQ(msg.time, machine.getLastMessageTime());
     ASSERT_EQ(msg.time, machine.getLastStateUpdate());
@@ -32,7 +33,7 @@ TEST(StateMachine, stateUpdateMessage) {
     msg.time = base::Time::now();
     msg.can_id = 0x702;
     msg.data[0] = NODE_STOPPED;
-    ASSERT_EQ(true, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_HEARTBEAT), machine.process(msg));
     ASSERT_EQ(true, machine.hasState());
     ASSERT_EQ(msg.time, machine.getLastMessageTime());
     ASSERT_EQ(msg.time, machine.getLastStateUpdate());
@@ -45,7 +46,7 @@ TEST(StateMachine, stateUpdateFromAnotherNode) {
     msg.time = base::Time::now();
     msg.can_id = 0x703;
     msg.data[0] = NODE_STOPPED;
-    ASSERT_EQ(false, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_NOT_FOR_ME), machine.process(msg));
     ASSERT_EQ(false, machine.hasState());
 }
 
@@ -66,7 +67,7 @@ TEST(StateMachine, processDoesNotThrowOnAnEmergencyWithZeroCode) {
     msg.can_id = 0x082;
     msg.data[0] = 0x10;
     msg.data[1] = 0x00;
-    ASSERT_EQ(true, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_EMERGENCY_NO_ERROR), machine.process(msg));
 }
 
 TEST(StateMachine, processIgnoredEmergencyMessagesFromOtherNodes) {
@@ -76,7 +77,7 @@ TEST(StateMachine, processIgnoredEmergencyMessagesFromOtherNodes) {
     msg.can_id = 0x083;
     msg.data[0] = 0x00;
     msg.data[1] = 0x01;
-    ASSERT_EQ(false, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_NOT_FOR_ME), machine.process(msg));
 }
 
 TEST(StateMachine, getNodeID) {
@@ -141,7 +142,7 @@ TEST(StateMachine, processUploadReply) {
     msg.data[5] = 0x03;
     msg.data[6] = 0x00;
     msg.data[7] = 0x00;
-    ASSERT_EQ(true, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_SDO, 0x1801, 3), machine.process(msg));
     ASSERT_EQ(0x3FE, machine.get<uint16_t>(0x1801, 3));
 }
 
@@ -175,7 +176,7 @@ TEST(StateMachine, ignoresSDOAbortForAnotherNode)
     msg.data[6] = 0x03;
     msg.data[7] = 0x05;
     StateMachine machine(2);
-    ASSERT_EQ(false, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_NOT_FOR_ME), machine.process(msg));
 }
 
 TEST(StateMachine, configurePDOMapping)
@@ -224,24 +225,28 @@ TEST(StateMachine, processPDO)
     msg.data[0] = 0x01;
     msg.data[1] = 0x02;
     msg.data[2] = 0x03;
-    ASSERT_EQ(true, machine.process(msg));
+
+    Update expected(StateMachine::PROCESSED_PDO);
+    expected.addUpdate(0x6000, 0x02);
+    expected.addUpdate(0x6401, 0x01);
+    ASSERT_EQ(expected, machine.process(msg));
     ASSERT_EQ(1, machine.sizeOf(0x6000, 0x02));
     ASSERT_EQ(2, machine.sizeOf(0x6401, 0x01));
     ASSERT_EQ(0x01, machine.get<uint8_t>(0x6000, 0x02));
     ASSERT_EQ(0x0302, machine.get<uint16_t>(0x6401, 0x01));
 }
 
-TEST(StateMachine, processPDOReturnsFalseIfNoMappingExists)
+TEST(StateMachine, processPDOIfNoMappingExists)
 {
     StateMachine machine(2);
 
     canbus::Message msg;
     msg.time = base::Time::now();
     msg.can_id = FUNCTION_PDO1_TRANSMIT + 2;
-    ASSERT_EQ(false, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_PDO_UNEXPECTED), machine.process(msg));
 }
 
-TEST(StateMachine, processPDOReturnsFalseIfAMappingIsEmpty)
+TEST(StateMachine, processPDOIfAMappingIsEmpty)
 {
     StateMachine machine(2);
     PDOMapping mappings;
@@ -250,5 +255,5 @@ TEST(StateMachine, processPDOReturnsFalseIfAMappingIsEmpty)
     canbus::Message msg;
     msg.time = base::Time::now();
     msg.can_id = FUNCTION_PDO1_TRANSMIT + 2;
-    ASSERT_EQ(false, machine.process(msg));
+    ASSERT_EQ(Update(StateMachine::PROCESSED_PDO_UNEXPECTED), machine.process(msg));
 }
