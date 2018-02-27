@@ -50,6 +50,11 @@ namespace canopen_master
             bool hasUpdatedObjects() const;
 
             bool operator ==(Update const& other) const;
+
+            ObjectIdentifier* begin() { return updated; }
+            ObjectIdentifier* end() { return updated + update_count; }
+            const ObjectIdentifier* begin() const { return updated; }
+            const ObjectIdentifier* end() const { return updated + update_count; }
         };
 
     private:
