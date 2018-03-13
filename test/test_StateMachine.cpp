@@ -14,6 +14,22 @@ TEST(StateMachine, hasNoStateBeforeTheFirstMessage)
     ASSERT_EQ(false, machine.hasState());
 }
 
+TEST(StateMachine, queryStateTransition) {
+    StateMachine machine(2);
+    canbus::Message msg = machine.queryStateTransition(NODE_START);
+    ASSERT_EQ(msg.can_id, 0);
+    ASSERT_EQ(msg.size, 2);
+    ASSERT_EQ(msg.data[0], 1);
+    ASSERT_EQ(msg.data[1], 2);
+}
+
+TEST(StateMachine, queryState) {
+    StateMachine machine(2);
+    canbus::Message msg = machine.queryState();
+    ASSERT_EQ(msg.can_id, 0x702);
+    ASSERT_EQ(msg.size, 0);
+}
+
 TEST(StateMachine, bootupMessageHandling) {
     StateMachine machine(2);
     canbus::Message msg;

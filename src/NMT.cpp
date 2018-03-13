@@ -7,6 +7,7 @@ canbus::Message canopen_master::makeModuleControlCommand(NODE_STATE_TRANSITION s
 {
     canbus::Message msg;
     msg.can_id = BROADCAST_NMT_MODULE_CONTROL;
+    msg.size = 2;
     msg.data[0] = state;
     msg.data[1] = nodeId;
     return msg;
@@ -16,6 +17,7 @@ canbus::Message canopen_master::makeNMTNodeGuard(uint8_t nodeId)
 {
     canbus::Message msg;
     msg.can_id = FUNCTION_NMT_HEARTBEAT + nodeId;
+    msg.size = 0;
     return msg;
 }
 
