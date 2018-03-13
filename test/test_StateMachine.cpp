@@ -104,7 +104,7 @@ TEST(StateMachine, upload) {
     StateMachine machine(2);
     canbus::Message msg = machine.upload(0x1801, 3);
     ASSERT_EQ(msg.can_id, 0x602);
-    ASSERT_EQ(msg.size, 4);
+    ASSERT_EQ(msg.size, 8);
     EXPECT_THAT(
         std::vector<uint8_t>(msg.data, msg.data + 8),
         ElementsAre(0x40, 0x01, 0x18, 0x03, 0x00, 0x00, 0x00, 0x00)
@@ -116,7 +116,7 @@ TEST(StateMachine, download) {
     uint16_t value = 0x3FE;
     canbus::Message msg = machine.download(0x1801, 3, value);
     ASSERT_EQ(msg.can_id, 0x602);
-    ASSERT_EQ(msg.size, 6);
+    ASSERT_EQ(msg.size, 8);
     EXPECT_THAT(
         std::vector<uint8_t>(msg.data, msg.data + 8),
         ElementsAre(0x2B, 0x01, 0x18, 0x03, 0xFE, 0x03, 0x00, 0x00)
@@ -135,7 +135,7 @@ TEST(StateMachine, downloadOfADeclaredObject) {
     machine.declare(0x1801, 3, 2);
     canbus::Message msg = machine.download(0x1801, 3, value);
     ASSERT_EQ(msg.can_id, 0x602);
-    ASSERT_EQ(msg.size, 6);
+    ASSERT_EQ(msg.size, 8);
     EXPECT_THAT(
         std::vector<uint8_t>(msg.data, msg.data + 8),
         ElementsAre(0x2B, 0x01, 0x18, 0x03, 0xFE, 0x03, 0x00, 0x00)
