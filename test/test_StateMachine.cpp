@@ -104,6 +104,7 @@ TEST(StateMachine, upload) {
     StateMachine machine(2);
     canbus::Message msg = machine.upload(0x1801, 3);
     ASSERT_EQ(msg.can_id, 0x602);
+    ASSERT_EQ(msg.size, 4);
     EXPECT_THAT(
         std::vector<uint8_t>(msg.data, msg.data + 8),
         ElementsAre(0x40, 0x01, 0x18, 0x03, 0x00, 0x00, 0x00, 0x00)
@@ -115,6 +116,7 @@ TEST(StateMachine, download) {
     uint16_t value = 0x3FE;
     canbus::Message msg = machine.download(0x1801, 3, value);
     ASSERT_EQ(msg.can_id, 0x602);
+    ASSERT_EQ(msg.size, 6);
     EXPECT_THAT(
         std::vector<uint8_t>(msg.data, msg.data + 8),
         ElementsAre(0x2B, 0x01, 0x18, 0x03, 0xFE, 0x03, 0x00, 0x00)
@@ -133,6 +135,7 @@ TEST(StateMachine, downloadOfADeclaredObject) {
     machine.declare(0x1801, 3, 2);
     canbus::Message msg = machine.download(0x1801, 3, value);
     ASSERT_EQ(msg.can_id, 0x602);
+    ASSERT_EQ(msg.size, 6);
     EXPECT_THAT(
         std::vector<uint8_t>(msg.data, msg.data + 8),
         ElementsAre(0x2B, 0x01, 0x18, 0x03, 0xFE, 0x03, 0x00, 0x00)
@@ -204,14 +207,17 @@ TEST(StateMachine, configurePDOMapping)
     vector<canbus::Message> msg = machine.configurePDOMapping(true, 1, mappings);
     ASSERT_EQ(3, msg.size());
 
+    ASSERT_EQ(5, msg[0].size);
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[0].data + 1));
     ASSERT_EQ(0,          msg[0].data[3]);
     ASSERT_EQ(2,          msg[0].data[4]);
 
+    ASSERT_EQ(8, msg[1].size);
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[1].data + 1));
     ASSERT_EQ(1,          msg[1].data[3]);
     ASSERT_EQ(0x60000208, fromLittleEndian<uint32_t>(msg[1].data + 4));
 
+    ASSERT_EQ(8, msg[2].size);
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[2].data + 1));
     ASSERT_EQ(2,          msg[2].data[3]);
     ASSERT_EQ(0x64010110, fromLittleEndian<uint32_t>(msg[2].data + 4));
