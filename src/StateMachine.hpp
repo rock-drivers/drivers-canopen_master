@@ -95,6 +95,10 @@ namespace canopen_master
         /** Returns whether we have received a node state update */
         bool hasState() const;
 
+        /** Change the node state
+         */
+        canbus::Message queryStateTransition(NODE_STATE_TRANSITION transition) const;
+
         /** Returns the last known state
          *
          * @throw std::runtime_error if the state is unknown

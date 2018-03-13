@@ -3,7 +3,7 @@
 
 using namespace canopen_master;
 
-canbus::Message canopen_master::makeModuleControlCommand(MODULE_CONTROL_COMMANDS state, uint8_t nodeId)
+canbus::Message canopen_master::makeModuleControlCommand(NODE_STATE_TRANSITION state, uint8_t nodeId)
 {
     canbus::Message msg;
     msg.can_id = BROADCAST_NMT_MODULE_CONTROL;

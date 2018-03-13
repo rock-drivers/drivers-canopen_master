@@ -47,6 +47,15 @@ namespace canopen_master
         NODE_PRE_OPERATIONAL = 0x7f
     };
 
+    enum NODE_STATE_TRANSITION
+    {
+        NODE_START = 0x01,
+        NODE_STOP  = 0x02,
+        NODE_ENTER_PRE_OPERATIONAL = 0x80,
+        NODE_RESET = 0x81,
+        NODE_RESET_COMMUNICATION = 0x82
+    };
+
     inline uint16_t getFunctionCode(canbus::Message const& msg)
     {
         return msg.can_id & FUNCTION_MASK;

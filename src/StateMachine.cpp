@@ -54,6 +54,12 @@ canbus::Message StateMachine::queryState() const
     return makeNMTNodeGuard(nodeId);
 }
 
+canbus::Message StateMachine::queryStateTransition(
+    NODE_STATE_TRANSITION transition) const
+{
+    return makeModuleControlCommand(transition, nodeId);
+}
+
 uint8_t StateMachine::getNodeID() const
 {
     return nodeId;
