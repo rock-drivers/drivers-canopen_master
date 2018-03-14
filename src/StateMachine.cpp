@@ -148,7 +148,9 @@ StateMachine::Update StateMachine::processSDOReceive(canbus::Message const& msg)
     }
     else if (cmd.command == SDO_INITIATE_DOMAIN_DOWNLOAD_REPLY)
     {
-        return Update(PROCESSED_SDO_INITIATE_DOWNLOAD);
+        uint16_t objectId = getSDOObjectID(msg);
+        uint8_t  subId    = getSDOObjectSubID(msg);
+        return Update(PROCESSED_SDO_INITIATE_DOWNLOAD, objectId, subId);
     }
     else
     {
@@ -235,7 +237,7 @@ uint32_t StateMachine::get(uint16_t objectId, uint16_t subId, uint8_t* data, uin
     return actualSize;
 }
 
-void StateMachine::validatePDOMapping(PDOMapping const& mapping)
+void StateMachine::validatePDOMapping(PDOMapping const& mapping) const
 {
     for (const auto m : mapping.mappings)
     {
@@ -245,7 +247,7 @@ void StateMachine::validatePDOMapping(PDOMapping const& mapping)
     }
 }
 
-std::vector<canbus::Message> StateMachine::configurePDOMapping(bool transmit, uint8_t pdoIndex, PDOMapping const& mapping)
+std::vector<canbus::Message> StateMachine::configurePDOMapping(bool transmit, uint8_t pdoIndex, PDOMapping const& mapping) const
 {
     validatePDOMapping(mapping);
     return makePDOMappingMessages(transmit, nodeId, pdoIndex, mapping);
@@ -263,9 +265,9 @@ void StateMachine::declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping
     pdoMappings[pdoIndex] = mapping;
 }
 
-canbus::Message StateMachine::configurePDOParameters(bool transmit, uint8_t pdoIndex, PDOCommunicationParameters const& parameters)
+std::vector<canbus::Message> StateMachine::configurePDOParameters(bool transmit, uint8_t pdoIndex, PDOCommunicationParameters const& parameters) const
 {
-    return makePDOCommunicationParametersMessage(transmit, nodeId, pdoIndex, parameters);
+    return makePDOCommunicationParametersMessages(transmit, nodeId, pdoIndex, parameters);
 }
 
 

@@ -207,17 +207,14 @@ TEST(StateMachine, configurePDOMapping)
     vector<canbus::Message> msg = machine.configurePDOMapping(true, 1, mappings);
     ASSERT_EQ(3, msg.size());
 
-    ASSERT_EQ(5, msg[0].size);
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[0].data + 1));
     ASSERT_EQ(0,          msg[0].data[3]);
     ASSERT_EQ(2,          msg[0].data[4]);
 
-    ASSERT_EQ(8, msg[1].size);
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[1].data + 1));
     ASSERT_EQ(1,          msg[1].data[3]);
     ASSERT_EQ(0x60000208, fromLittleEndian<uint32_t>(msg[1].data + 4));
 
-    ASSERT_EQ(8, msg[2].size);
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[2].data + 1));
     ASSERT_EQ(2,          msg[2].data[3]);
     ASSERT_EQ(0x64010110, fromLittleEndian<uint32_t>(msg[2].data + 4));
@@ -278,4 +275,133 @@ TEST(StateMachine, processPDOIfAMappingIsEmpty)
     msg.time = base::Time::now();
     msg.can_id = FUNCTION_PDO1_TRANSMIT + 2;
     ASSERT_EQ(Update(StateMachine::PROCESSED_PDO_UNEXPECTED), machine.process(msg));
+}
+
+TEST(StateMachine, configurePDOParameters_receive_asynchronous)
+{
+    StateMachine machine(2);
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_ASYNCHRONOUS;
+
+    vector<canbus::Message> messages =
+        machine.configurePDOParameters(false, 1, parameters);
+
+    ASSERT_EQ(2, messages.size());
+    ASSERT_EQ(0x1401, fromLittleEndian<uint16_t>(messages[0].data + 1));
+    ASSERT_EQ(1,      fromLittleEndian<uint8_t>(messages[0].data + 3));
+    ASSERT_EQ(0x302,  fromLittleEndian<uint32_t>(messages[0].data + 4));
+
+    ASSERT_EQ(0x1401, fromLittleEndian<uint16_t>(messages[1].data + 1));
+    ASSERT_EQ(2,      fromLittleEndian<uint8_t>(messages[1].data + 3));
+    ASSERT_EQ(254,    fromLittleEndian<uint8_t>(messages[1].data + 4));
+}
+
+TEST(StateMachine, configurePDOParameters_transmit_synchronous)
+{
+    StateMachine machine(2);
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_SYNCHRONOUS;
+    parameters.sync_period = 10;
+
+    vector<canbus::Message> messages =
+        machine.configurePDOParameters(true, 1, parameters);
+
+    ASSERT_EQ(2, messages.size());
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[0].data + 1));
+    ASSERT_EQ(1,      fromLittleEndian<uint8_t>(messages[0].data + 3));
+    ASSERT_EQ(0x282,  fromLittleEndian<uint32_t>(messages[0].data + 4));
+
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[1].data + 1));
+    ASSERT_EQ(2,      fromLittleEndian<uint8_t>(messages[1].data + 3));
+    ASSERT_EQ(10,     fromLittleEndian<uint8_t>(messages[1].data + 4));
+}
+
+TEST(StateMachine, configurePDOParameters_transmit_cyclic_synchronous_rejects_invalid_cycle)
+{
+    StateMachine machine(2);
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_SYNCHRONOUS;
+    parameters.sync_period = 253;
+
+    ASSERT_THROW(machine.configurePDOParameters(true, 1, parameters),
+        std::invalid_argument);
+}
+
+TEST(StateMachine, configurePDOParameters_transmit_asynchronous_aperiodic)
+{
+    StateMachine machine(2);
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_ASYNCHRONOUS;
+    parameters.inhibit_time = base::Time::fromMilliseconds(10);
+
+    vector<canbus::Message> messages =
+        machine.configurePDOParameters(true, 1, parameters);
+
+    ASSERT_EQ(4, messages.size());
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[0].data + 1));
+    ASSERT_EQ(1,      fromLittleEndian<uint8_t>(messages[0].data + 3));
+    ASSERT_EQ(0x282,  fromLittleEndian<uint32_t>(messages[0].data + 4));
+
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[1].data + 1));
+    ASSERT_EQ(2,      fromLittleEndian<uint8_t>(messages[1].data + 3));
+    ASSERT_EQ(254,    fromLittleEndian<uint8_t>(messages[1].data + 4));
+
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[2].data + 1));
+    ASSERT_EQ(3,      fromLittleEndian<uint8_t>(messages[2].data + 3));
+    ASSERT_EQ(100,    fromLittleEndian<uint16_t>(messages[2].data + 4));
+
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[3].data + 1));
+    ASSERT_EQ(5,      fromLittleEndian<uint8_t>(messages[3].data + 3));
+    ASSERT_EQ(0,      fromLittleEndian<uint16_t>(messages[3].data + 4));
+}
+
+TEST(StateMachine, configurePDOParameters_transmit_asynchronous_periodic)
+{
+    StateMachine machine(2);
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_ASYNCHRONOUS;
+    parameters.inhibit_time = base::Time::fromMilliseconds(10);
+    parameters.timer_period = base::Time::fromMilliseconds(10);
+
+    vector<canbus::Message> messages =
+        machine.configurePDOParameters(true, 1, parameters);
+
+    ASSERT_EQ(4, messages.size());
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[0].data + 1));
+    ASSERT_EQ(1,      fromLittleEndian<uint8_t>(messages[0].data + 3));
+    ASSERT_EQ(0x282,  fromLittleEndian<uint32_t>(messages[0].data + 4));
+
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[1].data + 1));
+    ASSERT_EQ(2,      fromLittleEndian<uint8_t>(messages[1].data + 3));
+    ASSERT_EQ(254,    fromLittleEndian<uint8_t>(messages[1].data + 4));
+
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[2].data + 1));
+    ASSERT_EQ(3,      fromLittleEndian<uint8_t>(messages[2].data + 3));
+    ASSERT_EQ(100,    fromLittleEndian<uint16_t>(messages[2].data + 4));
+
+    ASSERT_EQ(0x1801, fromLittleEndian<uint16_t>(messages[3].data + 1));
+    ASSERT_EQ(5,      fromLittleEndian<uint8_t>(messages[3].data + 3));
+    ASSERT_EQ(10,     fromLittleEndian<uint16_t>(messages[3].data + 4));
+}
+
+TEST(StateMachine, configurePDOParameters_transmit_asynchronous_validates_inhibit_time)
+{
+    StateMachine machine(2);
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_ASYNCHRONOUS;
+    parameters.inhibit_time = base::Time::fromMicroseconds(6553600ul);
+
+    ASSERT_THROW(machine.configurePDOParameters(true, 1, parameters),
+        std::invalid_argument);
+}
+
+TEST(StateMachine, configurePDOParameters_transmit_asynchronous_validates_period)
+{
+    StateMachine machine(2);
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_ASYNCHRONOUS;
+    parameters.timer_period = base::Time::fromMilliseconds(65536);
+
+    ASSERT_THROW(machine.configurePDOParameters(true, 1, parameters),
+        std::invalid_argument);
 }

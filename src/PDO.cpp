@@ -3,17 +3,64 @@
 #include <canopen_master/Exceptions.hpp>
 #include <canopen_master/SDO.hpp>
 
+using namespace std;
 using namespace canopen_master;
 
-canbus::Message canopen_master::makePDOCommunicationParametersMessage(
+vector<canbus::Message> canopen_master::makePDOCommunicationParametersMessages(
     bool transmit, uint16_t nodeId, int pdoIndex,
     PDOCommunicationParameters const& parameters)
 {
+    uint32_t sdoObjId = getPDOParametersObjectId(transmit, pdoIndex);
+    uint32_t cob_id = parameters.cob_id;
+    if (!cob_id)
+        cob_id = getPDODefaultCOBID(transmit, pdoIndex, nodeId);
+
+    vector<canbus::Message> messages;
+
+    // Set up COB-ID
     uint8_t data[4];
-    toLittleEndian(data + 0, parameters.inhibit_time);
-    toLittleEndian(data + 2, parameters.timer_period);
-    return makeSDOInitiateDomainDownload(
-        nodeId, getPDOParametersObjectId(transmit, pdoIndex), 2, data, 4);
+    toLittleEndian(data, cob_id);
+    messages.push_back(makeSDOInitiateDomainDownload(nodeId, sdoObjId, 1, data, 4));
+
+    // Set up mode
+    data[0] = 0;
+    switch(parameters.transmission_mode)
+    {
+        case PDO_SYNCHRONOUS:
+            if (parameters.sync_period > 251)
+                throw std::invalid_argument("invalid sync_period in PDO_SYNCHRONOUS mode, must be between 0 and 251");
+            data[0] = parameters.sync_period;
+            break;
+        case PDO_SYNCHRONOUS_RTR_ONLY:
+            data[0] = 252;
+            break;
+        case PDO_ASYNCHRONOUS_RTR_ONLY:
+            data[0] = 253;
+            break;
+        case PDO_ASYNCHRONOUS:
+            data[0] = 254;
+            break;
+    }
+    messages.push_back(makeSDOInitiateDomainDownload(nodeId, sdoObjId, 2, data, 1));
+
+    if (transmit && parameters.transmission_mode >= PDO_ASYNCHRONOUS_RTR_ONLY)
+    {
+        uint64_t inhibit_time_us  = parameters.inhibit_time.toMicroseconds();
+        if (inhibit_time_us > 65535)
+            throw std::invalid_argument("inhibit time too big (must be lower than 6.5s)");
+        toLittleEndian(data, static_cast<uint16_t>(inhibit_time_us / 100));
+        messages.push_back(
+            makeSDOInitiateDomainDownload(nodeId, sdoObjId, 3, data, 2));
+
+        uint64_t timer_period_ms = parameters.timer_period.toMilliseconds();
+        if (timer_period_ms > 65535)
+            throw std::invalid_argument("timer period too big (must be lower than 65s)");
+        toLittleEndian(data, static_cast<uint16_t>(timer_period_ms));
+        messages.push_back(
+            makeSDOInitiateDomainDownload(nodeId, sdoObjId, 5, data, 2));
+    }
+
+    return messages;
 }
 
 bool canopen_master::isPDO(uint16_t functionCode)
@@ -27,9 +74,17 @@ bool canopen_master::isPDOTransmit(uint16_t functionCode)
     return isPDO(functionCode) && ((functionCode & 0x80) == 0x80);
 }
 
+uint16_t canopen_master::getPDODefaultCOBID(bool transmit, int pdoIndex, uint16_t nodeId)
+{
+    if (transmit)
+        return FUNCTION_PDO0_TRANSMIT + (pdoIndex << 8) + nodeId;
+    else
+        return FUNCTION_PDO0_RECEIVE  + (pdoIndex << 8) + nodeId;
+}
+
 int canopen_master::getPDOIndex(uint16_t functionCode)
 {
-    return (functionCode - FUNCTION_PDO0_TRANSMIT) / 0x100;
+    return (functionCode - FUNCTION_PDO0_TRANSMIT) >> 8;
 }
 
 uint16_t canopen_master::getPDOParametersObjectId(bool transmit, uint8_t pdoIndex)
