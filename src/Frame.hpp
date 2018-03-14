@@ -101,6 +101,18 @@ namespace canopen_master
         data[2] = (value >> 16) & 0xFF;
         data[3] = (value >> 24) & 0xFF;
     }
+    template<> inline void toLittleEndian(uint8_t* data, int8_t value)
+    {
+        return toLittleEndian<uint8_t>(data, reinterpret_cast<uint8_t&>(value));
+    }
+    template<> inline void toLittleEndian(uint8_t* data, int16_t value)
+    {
+        return toLittleEndian<uint16_t>(data, reinterpret_cast<uint16_t&>(value));
+    }
+    template<> inline void toLittleEndian(uint8_t* data, int32_t value)
+    {
+        return toLittleEndian<uint32_t>(data, reinterpret_cast<uint32_t&>(value));
+    }
 
     template<typename T> T fromLittleEndian(uint8_t const* data);
     template<> inline uint8_t fromLittleEndian(uint8_t const* data)
@@ -120,6 +132,20 @@ namespace canopen_master
             static_cast<uint32_t>(data[1]) << 8  |
             static_cast<uint32_t>(data[2]) << 16 |
             static_cast<uint32_t>(data[3]) << 24;
+    }
+    template<> inline int8_t fromLittleEndian(uint8_t const* data)
+    {
+        return reinterpret_cast<int8_t const&>(data[0]);
+    }
+    template<> inline int16_t fromLittleEndian(uint8_t const* data)
+    {
+        uint16_t result = fromLittleEndian<uint16_t>(data);
+        return reinterpret_cast<int16_t const&>(result);
+    }
+    template<> inline int32_t fromLittleEndian(uint8_t const* data)
+    {
+        uint32_t result = fromLittleEndian<uint32_t>(data);
+        return reinterpret_cast<int32_t const&>(result);
     }
 }
 
