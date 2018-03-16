@@ -50,8 +50,10 @@ namespace canopen_master
         const uint8_t  subId;
         const uint32_t rawCode;
 
+        static std::string formatMessage(uint16_t objectId, uint8_t subId, uint32_t rawCode);
+
         SDODomainTransferAborted(uint16_t objectId, uint8_t subId, uint32_t rawCode)
-            : std::runtime_error("SDO domain transfer aborted")
+            : std::runtime_error(formatMessage(objectId, subId, rawCode))
             , objectId(objectId)
             , subId(subId)
             , rawCode(rawCode) {}

@@ -102,8 +102,6 @@ std::vector<canbus::Message> canopen_master::makePDOMappingMessages(bool transmi
     uint16_t pdoObjectId = getPDOMappingObjectId(transmit, pdoIndex);
 
     uint8_t mappingSize = mapping.mappings.size();
-    result.push_back(makeSDOInitiateDomainDownload(nodeId, pdoObjectId, 0, &mappingSize, 1));
-
     for (int i = 0; i < mappingSize; ++i)
     {
         PDOMapping::MappedObject m = mapping.mappings[i];
