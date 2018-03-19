@@ -247,6 +247,12 @@ void StateMachine::validatePDOMapping(PDOMapping const& mapping) const
     }
 }
 
+std::vector<canbus::Message> StateMachine::configurePDO(bool transmit, uint8_t pdoIndex,
+    PDOCommunicationParameters const& parameters, PDOMapping const& mapping) const
+{
+    return makePDOConfigurationMessages(transmit, nodeId, pdoIndex, parameters, mapping);
+}
+
 std::vector<canbus::Message> StateMachine::configurePDOMapping(bool transmit, uint8_t pdoIndex, PDOMapping const& mapping) const
 {
     validatePDOMapping(mapping);

@@ -6,6 +6,29 @@
 using namespace std;
 using namespace canopen_master;
 
+vector<canbus::Message> canopen_master::makePDOConfigurationMessages(
+        bool transmit, uint16_t nodeId, int pdoIndex,
+        PDOCommunicationParameters const& parameters,
+        PDOMapping const& mappings)
+{
+    auto messages = makePDOCommunicationParametersMessages(
+        transmit, nodeId, pdoIndex, parameters);
+    auto pdoCOB_IDSetting = messages[0];
+    // Disable the PDO by setting bit 31. We will reset this
+    // later.
+    messages[0].data[7] |= 0x80;
+
+    auto mappingMessages = makePDOMappingMessages(
+        transmit, nodeId, pdoIndex, mappings);
+    messages.insert(
+        messages.end(),
+        mappingMessages.begin(), mappingMessages.end());
+
+    // Now re-enable the message
+    messages.push_back(pdoCOB_IDSetting);
+    return messages;
+}
+
 vector<canbus::Message> canopen_master::makePDOCommunicationParametersMessages(
     bool transmit, uint16_t nodeId, int pdoIndex,
     PDOCommunicationParameters const& parameters)
@@ -100,16 +123,22 @@ std::vector<canbus::Message> canopen_master::makePDOMappingMessages(bool transmi
 {
     std::vector<canbus::Message> result;
     uint16_t pdoObjectId = getPDOMappingObjectId(transmit, pdoIndex);
-
     uint8_t mappingSize = mapping.mappings.size();
+
+    uint8_t buffer[4] = { 0, 0, 0, 0 };
+    result.push_back(makeSDOInitiateDomainDownload(nodeId, pdoObjectId, 0, buffer, 4));
     for (int i = 0; i < mappingSize; ++i)
     {
         PDOMapping::MappedObject m = mapping.mappings[i];
+
         uint8_t buffer[4];
         buffer[0] = m.size * 8;
         buffer[1] = m.subId;
         toLittleEndian(buffer + 2, m.objectId);
         result.push_back(makeSDOInitiateDomainDownload(nodeId, pdoObjectId, i + 1, buffer, 4));
     }
+
+    toLittleEndian(buffer, static_cast<int32_t>(mappingSize));
+    result.push_back(makeSDOInitiateDomainDownload(nodeId, pdoObjectId, 0, buffer, 4));
     return result;
 }

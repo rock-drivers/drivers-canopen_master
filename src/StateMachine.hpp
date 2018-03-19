@@ -181,6 +181,10 @@ namespace canopen_master
             return fromLittleEndian<T>(data);
         }
 
+        /** Configures a whole PDO */
+        std::vector<canbus::Message> configurePDO(bool transmit, uint8_t pdoIndex,
+            PDOCommunicationParameters const& parameters, PDOMapping const& mapping) const;
+
         /** Configure the communication parameters for the given PDO */
         std::vector<canbus::Message> configurePDOParameters(bool transmit, uint8_t pdoIndex,
             PDOCommunicationParameters const& parameters) const;

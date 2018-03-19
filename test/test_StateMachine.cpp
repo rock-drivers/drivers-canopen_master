@@ -205,11 +205,11 @@ TEST(StateMachine, configurePDOMapping)
     mappings.add(0x6401, 0x01, 2);
     StateMachine machine(2);
     vector<canbus::Message> msg = machine.configurePDOMapping(true, 1, mappings);
-    ASSERT_EQ(3, msg.size());
+    ASSERT_EQ(4, msg.size());
 
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[0].data + 1));
     ASSERT_EQ(0,          msg[0].data[3]);
-    ASSERT_EQ(2,          msg[0].data[4]);
+    ASSERT_EQ(0,          fromLittleEndian<uint32_t>(msg[0].data + 4));
 
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[1].data + 1));
     ASSERT_EQ(1,          msg[1].data[3]);
@@ -218,6 +218,10 @@ TEST(StateMachine, configurePDOMapping)
     ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[2].data + 1));
     ASSERT_EQ(2,          msg[2].data[3]);
     ASSERT_EQ(0x64010110, fromLittleEndian<uint32_t>(msg[2].data + 4));
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[3].data + 1));
+    ASSERT_EQ(0,          msg[0].data[3]);
+    ASSERT_EQ(2,          fromLittleEndian<uint32_t>(msg[3].data + 4));
 }
 
 TEST(StateMachine, configurePDOMappingValidatesTheSizesMatchesDeclaredMappings)
@@ -405,3 +409,57 @@ TEST(StateMachine, configurePDOParameters_transmit_asynchronous_validates_period
     ASSERT_THROW(machine.configurePDOParameters(true, 1, parameters),
         std::invalid_argument);
 }
+
+TEST(StateMachine, configurePDO)
+{
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_ASYNCHRONOUS;
+    parameters.inhibit_time = base::Time::fromMilliseconds(10);
+    parameters.timer_period = base::Time::fromMilliseconds(10);
+
+    PDOMapping mappings;
+    mappings.add(0x6000, 0x02, 1);
+    mappings.add(0x6401, 0x01, 2);
+
+    StateMachine machine(2);
+    vector<canbus::Message> msg =
+        machine.configurePDO(true, 1, parameters, mappings);
+    ASSERT_EQ(9, msg.size());
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg[0].data + 1));
+    ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg[0].data + 3));
+    ASSERT_EQ(0x80000282, fromLittleEndian<uint32_t>(msg[0].data + 4));
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg[1].data + 1));
+    ASSERT_EQ(2,          fromLittleEndian<uint8_t>(msg[1].data + 3));
+    ASSERT_EQ(254,        fromLittleEndian<uint8_t>(msg[1].data + 4));
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg[2].data + 1));
+    ASSERT_EQ(3,          fromLittleEndian<uint8_t>(msg[2].data + 3));
+    ASSERT_EQ(100,        fromLittleEndian<uint16_t>(msg[2].data + 4));
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg[3].data + 1));
+    ASSERT_EQ(5,          fromLittleEndian<uint8_t>(msg[3].data + 3));
+    ASSERT_EQ(10,         fromLittleEndian<uint16_t>(msg[3].data + 4));
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[4].data + 1));
+    ASSERT_EQ(0,          msg[4].data[3]);
+    ASSERT_EQ(0,          fromLittleEndian<uint32_t>(msg[4].data + 4));
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[5].data + 1));
+    ASSERT_EQ(1,          msg[5].data[3]);
+    ASSERT_EQ(0x60000208, fromLittleEndian<uint32_t>(msg[5].data + 4));
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[6].data + 1));
+    ASSERT_EQ(2,          msg[6].data[3]);
+    ASSERT_EQ(0x64010110, fromLittleEndian<uint32_t>(msg[6].data + 4));
+
+    ASSERT_EQ(0x1A01,     fromLittleEndian<uint16_t>(msg[7].data + 1));
+    ASSERT_EQ(0,          msg[7].data[3]);
+    ASSERT_EQ(2,          fromLittleEndian<uint32_t>(msg[7].data + 4));
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg[8].data + 1));
+    ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg[8].data + 3));
+    ASSERT_EQ(0x282,      fromLittleEndian<uint32_t>(msg[8].data + 4));
+}
+
