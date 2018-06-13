@@ -211,6 +211,7 @@ canbus::Message StateMachine::sync() const
 {
     canbus::Message msg;
     msg.can_id = 0x100;
+    msg.size = 0;
     return msg;
 }
 
