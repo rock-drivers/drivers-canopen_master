@@ -7,6 +7,7 @@
 #include <canopen_master/Emergency.hpp>
 #include <iostream>
 #include <cstring>
+#include <algorithm>
 
 using namespace canopen_master;
 
@@ -297,6 +298,11 @@ void StateMachine::Update::addUpdate(uint16_t objectId, int8_t subId)
 bool StateMachine::Update::hasUpdatedObjects() const
 {
     return update_count == 0;
+}
+
+bool StateMachine::Update::hasUpdatedObject(uint16_t objectId, int8_t subId) const
+{
+    return find(updated, updated + update_count, ObjectIdentifier(objectId, subId)) != updated + update_count;
 }
 
 bool StateMachine::Update::operator ==(Update const& other) const

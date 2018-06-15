@@ -49,6 +49,9 @@ namespace canopen_master
             /** Whether this update has updated objects */
             bool hasUpdatedObjects() const;
 
+            /** Whether this update has updated objects */
+            bool hasUpdatedObject(uint16_t objectId, int8_t subId) const;
+
             bool operator ==(Update const& other) const;
 
             ObjectIdentifier* begin() { return updated; }
