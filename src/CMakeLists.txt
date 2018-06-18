@@ -4,3 +4,6 @@ rock_library(canopen_master
     HEADERS Frame.hpp NMT.hpp SDO.hpp StateMachine.hpp Exceptions.hpp
         Emergency.hpp PDO.hpp PDOMapping.hpp PDOCommunicationParameters.hpp
     DEPS_PKGCONFIG canbus base-types)
+
+rock_executable(canopen_ctl Main.cpp
+    DEPS canopen_master)
