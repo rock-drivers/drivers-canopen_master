@@ -11,3 +11,8 @@ void PDOMapping::add(uint16_t objectId, uint8_t subId, uint8_t size)
     currentSize += size;
     mappings.push_back(MappedObject { objectId, subId, size });
 }
+
+bool PDOMapping::empty() const
+{
+    return mappings.empty();
+}

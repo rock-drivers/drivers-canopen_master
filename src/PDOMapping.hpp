@@ -18,6 +18,8 @@ namespace canopen_master
         uint8_t currentSize = 0;
         std::vector<MappedObject> mappings;
         void add(uint16_t objectId, uint8_t subId, uint8_t size);
+
+        bool empty() const;
     };
 }
 
