@@ -165,7 +165,7 @@ namespace canopen_master
          * The SYNC message triggers sending the PDOs that have been
          * configured to
          */
-        canbus::Message sync() const;
+        static canbus::Message sync();
 
         /** Get raw data from a given object */
         uint32_t get(uint16_t objectId, uint16_t subId, uint8_t* data, uint32_t bufferSize) const;

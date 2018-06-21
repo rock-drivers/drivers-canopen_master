@@ -208,7 +208,7 @@ base::Time StateMachine::timestamp(uint16_t objectId, uint8_t subId) const
     else return it->second.lastUpdate;
 }
 
-canbus::Message StateMachine::sync() const
+canbus::Message StateMachine::sync()
 {
     canbus::Message msg;
     msg.can_id = 0x80;
