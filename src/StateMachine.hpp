@@ -170,6 +170,16 @@ namespace canopen_master
         /** Get raw data from a given object */
         uint32_t get(uint16_t objectId, uint16_t subId, uint8_t* data, uint32_t bufferSize) const;
 
+        /** Set an object's value in the dictionary */
+        template<typename T>
+        void set(uint16_t objectId, uint8_t subId, T value,
+            base::Time const& time = base::Time::now())
+        {
+            uint8_t buffer[sizeof(value)];
+            toLittleEndian(buffer, value);
+            setObjectValue(objectId, subId, time, buffer, sizeof(value));
+        }
+
         /** Get the currently known value for the given object */
         template<typename T>
         T get(uint16_t objectId, uint8_t subId) const

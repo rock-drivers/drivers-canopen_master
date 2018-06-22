@@ -123,6 +123,15 @@ TEST(StateMachine, download) {
     );
 }
 
+TEST(StateMachine, set_and_get) {
+    StateMachine machine(2);
+    uint16_t value = 0x1234;
+    base::Time time = base::Time::fromSeconds(12);
+    machine.set(0x12, 0x1, value, time);
+    ASSERT_EQ(value, machine.get<uint16_t>(0x12, 0x1));
+    ASSERT_EQ(time, machine.timestamp(0x12, 0x1));
+}
+
 TEST(StateMachine, getFailsOnADeclaredButUnreadObject) {
     StateMachine machine(2);
     machine.declare(0x1801, 3, 2);
@@ -462,4 +471,3 @@ TEST(StateMachine, configurePDO)
     ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg[8].data + 3));
     ASSERT_EQ(0x282,      fromLittleEndian<uint32_t>(msg[8].data + 4));
 }
-
