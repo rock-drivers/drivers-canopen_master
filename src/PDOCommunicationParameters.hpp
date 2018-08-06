@@ -41,6 +41,31 @@ namespace canopen_master
          * Must be lower than 65s
          */
         base::Time timer_period;
+
+        static PDOCommunicationParameters Sync(uint16_t sync_period)
+        {
+            PDOCommunicationParameters parameters;
+            parameters.transmission_mode = PDO_SYNCHRONOUS;
+            parameters.sync_period = sync_period;
+            return parameters;
+        }
+        static PDOCommunicationParameters Async(
+            base::Time inhibit_time = base::Time())
+        {
+            PDOCommunicationParameters parameters;
+            parameters.transmission_mode = PDO_ASYNCHRONOUS;
+            parameters.inhibit_time = inhibit_time;
+            return parameters;
+        }
+        static PDOCommunicationParameters Periodic(
+            base::Time period, base::Time inhibit_time = base::Time())
+        {
+            PDOCommunicationParameters parameters;
+            parameters.transmission_mode = PDO_ASYNCHRONOUS;
+            parameters.inhibit_time = inhibit_time;
+            parameters.timer_period = period;
+            return parameters;
+        }
     };
 }
 
