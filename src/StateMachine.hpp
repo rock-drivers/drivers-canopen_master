@@ -82,7 +82,8 @@ namespace canopen_master
         base::Time lastStateUpdate;
         NODE_STATE state;
 
-        PDOMappings pdoMappings;
+        PDOMappings rpdoMappings;
+        PDOMappings tpdoMappings;
         Dictionary dictionary;
         Dictionary::iterator declareInternal(uint16_t objectId, uint8_t subId, uint8_t size);
 
@@ -206,12 +207,27 @@ namespace canopen_master
         std::vector<canbus::Message> configurePDOMapping(bool transmit, uint8_t pdoIndex,
             PDOMapping const& mapping) const;
 
-        /** Declare a PDO mapping to the state machine
+        /** Declare a TPDO mapping to the state machine
          *
-         * After this, the process method will map a PDO message to the
-         * object dictionary.
+         * TPDOs are PDOs sent by the slave
+         *
+         * After this, whenever the master receives a TPDO, it will update the
+         * corresponding objects in the dictionary
          */
-        void declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping);
+        void declareTPDOMapping(uint8_t pdoIndex, PDOMapping const& mapping);
+
+        /** Declare a RPDO mapping to the state machine
+         *
+         * RPDOs are PDOs sent to the slave
+         *
+         * Use this to be able to use .getPDO to build your PDO messages
+         */
+        void declareRPDOMapping(uint8_t pdoIndex, PDOMapping const& mapping);
+
+        /** Return the RPDO message that corresponds to the mapping declared with
+         * declareRPDOMapping
+         */
+        canbus::Message getRPDOMessage(unsigned int pdoIndex);
 
     private:
         void validatePDOMapping(PDOMapping const& mapping) const;
@@ -220,6 +236,10 @@ namespace canopen_master
         Update processHeartbeat(canbus::Message const& msg);
         Update processPDOReceive(int pdoIndex, canbus::Message const& msg);
         void setObjectValue(uint16_t objectId, uint8_t subId, base::Time const& time, uint8_t const* data, uint32_t dataSize);
+
+        /** Helper method for declareTPDOMapping and declareRPDOMapping */
+        void declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping,
+            std::vector<PDOMapping>& mappings);
     };
 }
 

@@ -25,7 +25,8 @@ StateMachine::Dictionary::iterator StateMachine::declareInternal(uint16_t object
 StateMachine::StateMachine(uint8_t nodeId)
     : nodeId(nodeId)
 {
-    pdoMappings.resize(MAX_PDO);
+    rpdoMappings.resize(MAX_PDO);
+    tpdoMappings.resize(MAX_PDO);
 }
 
 bool StateMachine::hasState() const
@@ -106,9 +107,9 @@ StateMachine::Update StateMachine::processHeartbeat(canbus::Message const& msg)
 
 StateMachine::Update StateMachine::processPDOReceive(int pdoIndex, canbus::Message const& msg)
 {
-    if (pdoMappings.size() < pdoIndex + 1u)
+    if (tpdoMappings.size() < pdoIndex + 1u)
         return Update(PROCESSED_PDO_UNEXPECTED);
-    PDOMapping const& mapping = pdoMappings[pdoIndex];
+    PDOMapping const& mapping = tpdoMappings[pdoIndex];
 
     Update update(PROCESSED_PDO);
     int offset = 0;
@@ -239,6 +240,26 @@ uint32_t StateMachine::get(uint16_t objectId, uint16_t subId, uint8_t* data, uin
     return actualSize;
 }
 
+canbus::Message StateMachine::getRPDOMessage(unsigned int pdoIndex)
+{
+    if (rpdoMappings.size() < pdoIndex)
+        throw std::invalid_argument("no RPDO declared with this index");
+
+    auto mapping = rpdoMappings[pdoIndex];
+
+    canbus::Message msg;
+    msg.can_id = getPDODefaultCOBID(false, pdoIndex, nodeId);
+
+    int offset = 0;
+    for (const auto m : mapping.mappings)
+    {
+        get(m.objectId, m.subId, msg.data + offset, m.size);
+        offset += m.size;
+    }
+    msg.size = offset;
+    return msg;
+}
+
 void StateMachine::validatePDOMapping(PDOMapping const& mapping) const
 {
     for (const auto m : mapping.mappings)
@@ -261,16 +282,27 @@ std::vector<canbus::Message> StateMachine::configurePDOMapping(bool transmit, ui
     return makePDOMappingMessages(transmit, nodeId, pdoIndex, mapping);
 }
 
-void StateMachine::declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping)
+void StateMachine::declareTPDOMapping(uint8_t pdoIndex, PDOMapping const& mapping)
+{
+    declarePDOMapping(pdoIndex, mapping, tpdoMappings);
+}
+
+void StateMachine::declareRPDOMapping(uint8_t pdoIndex, PDOMapping const& mapping)
+{
+    declarePDOMapping(pdoIndex, mapping, rpdoMappings);
+}
+
+void StateMachine::declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping,
+    std::vector<PDOMapping>& mappings)
 {
     validatePDOMapping(mapping);
 
     for (const auto m : mapping.mappings)
         declare(m.objectId, m.subId, m.size);
 
-    if (pdoIndex + 1u > pdoMappings.size())
-        pdoMappings.resize(pdoIndex + 1);
-    pdoMappings[pdoIndex] = mapping;
+    if (pdoIndex + 1u > mappings.size())
+        mappings.resize(pdoIndex + 1);
+    mappings[pdoIndex] = mapping;
 }
 
 std::vector<canbus::Message> StateMachine::configurePDOParameters(bool transmit, uint8_t pdoIndex, PDOCommunicationParameters const& parameters) const
