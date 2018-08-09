@@ -249,7 +249,7 @@ TEST(StateMachine, processPDO)
     mappings.add(0x6000, 0x02, 1);
     mappings.add(0x6401, 0x01, 2);
     StateMachine machine(2);
-    machine.declarePDOMapping(1, mappings);
+    machine.declareTPDOMapping(1, mappings);
 
     canbus::Message msg;
     msg.time = base::Time::now();
@@ -282,7 +282,7 @@ TEST(StateMachine, processPDOIfAMappingIsEmpty)
 {
     StateMachine machine(2);
     PDOMapping mappings;
-    machine.declarePDOMapping(1, mappings);
+    machine.declareTPDOMapping(1, mappings);
 
     canbus::Message msg;
     msg.time = base::Time::now();
