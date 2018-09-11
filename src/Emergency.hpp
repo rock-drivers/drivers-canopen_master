@@ -9,6 +9,7 @@ namespace canopen_master
     struct Emergency
     {
         uint16_t code;
+        uint8_t errorRegister;
         uint8_t vendorSpecific[5];
     };
 

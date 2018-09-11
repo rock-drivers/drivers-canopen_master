@@ -95,7 +95,7 @@ StateMachine::Update StateMachine::processEmergency(canbus::Message const& msg)
     if (em.code >> 8 == 0) // "No error" ????
         return Update(PROCESSED_EMERGENCY_NO_ERROR);
 
-    throw EmergencyMessageReceived(em.code);
+    throw EmergencyMessageReceived(em);
 }
 
 StateMachine::Update StateMachine::processHeartbeat(canbus::Message const& msg)

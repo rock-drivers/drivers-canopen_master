@@ -2,6 +2,8 @@
 #define canopen_master_EXCEPTIONS_HPP
 
 #include <stdexcept>
+#include <sstream>
+#include <canopen_master/Emergency.hpp>
 
 namespace canopen_master
 {
@@ -37,11 +39,24 @@ namespace canopen_master
 
     struct EmergencyMessageReceived : public std::runtime_error
     {
-        const uint16_t code;
+        const Emergency message;
 
-        EmergencyMessageReceived(uint16_t code)
-            : std::runtime_error("emergency message received")
-            , code(code) {}
+        static std::string formatMessage(Emergency const& message)
+        {
+            std::stringstream cv;
+            cv << std::hex << "emergency message received ("
+                << "code=" << message.code
+                << ", register=" << static_cast<int>(message.errorRegister)
+                << ", vendor=";
+
+            for (int i = 0; i < 5; ++i)
+                cv << " " << static_cast<int>(message.vendorSpecific[i]);
+            return cv.str();
+        }
+
+        EmergencyMessageReceived(Emergency message)
+            : std::runtime_error(formatMessage(message))
+            , message(message) {}
     };
 
     struct SDODomainTransferAborted : public std::runtime_error

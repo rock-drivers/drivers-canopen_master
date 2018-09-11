@@ -10,6 +10,7 @@ Emergency canopen_master::parseEmergencyMessage(canbus::Message const& msg)
         throw std::invalid_argument("expected an emergency message");
     Emergency em;
     em.code = fromLittleEndian<uint16_t>(msg.data);
+    em.errorRegister = msg.data[2];
     std::memcpy(em.vendorSpecific, msg.data + 3, 5);
     return em;
 }
