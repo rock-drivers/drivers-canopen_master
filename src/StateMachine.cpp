@@ -212,6 +212,7 @@ base::Time StateMachine::timestamp(uint16_t objectId, uint8_t subId) const
 canbus::Message StateMachine::sync()
 {
     canbus::Message msg;
+    msg.time = base::Time::now();
     msg.can_id = 0x80;
     msg.size = 0;
     return msg;
