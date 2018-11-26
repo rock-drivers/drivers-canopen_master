@@ -271,6 +271,11 @@ void StateMachine::validatePDOMapping(PDOMapping const& mapping) const
     }
 }
 
+canbus::Message StateMachine::disablePDO(bool transmit, uint8_t pdoIndex, uint32_t cob_id) const
+{
+    return disablePDOMessage(transmit, nodeId, pdoIndex, cob_id);
+}
+
 std::vector<canbus::Message> StateMachine::configurePDO(bool transmit, uint8_t pdoIndex,
     PDOCommunicationParameters const& parameters, PDOMapping const& mapping) const
 {

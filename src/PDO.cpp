@@ -6,6 +6,21 @@
 using namespace std;
 using namespace canopen_master;
 
+canbus::Message canopen_master::disablePDOMessage(
+        bool transmit, uint16_t nodeId, int pdoIndex, uint32_t cob_id)
+{
+    uint32_t sdoObjId = getPDOParametersObjectId(transmit, pdoIndex);
+    if (!cob_id)
+        cob_id = getPDODefaultCOBID(transmit, pdoIndex, nodeId);
+
+    // Set up COB-ID
+    uint8_t data[4];
+    toLittleEndian(data, cob_id);
+    auto message = makeSDOInitiateDomainDownload(nodeId, sdoObjId, 1, data, 4);
+    message.data[7] |= 0x80;
+    return message;
+}
+
 vector<canbus::Message> canopen_master::makePDOConfigurationMessages(
         bool transmit, uint16_t nodeId, int pdoIndex,
         PDOCommunicationParameters const& parameters,
