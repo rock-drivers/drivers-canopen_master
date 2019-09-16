@@ -123,6 +123,39 @@ TEST(StateMachine, download) {
     );
 }
 
+TEST(StateMachine, download_8) {
+    StateMachine machine(2);
+    canbus::Message msg = machine.download<uint8_t>(0x1801, 3, 0xFE);
+    ASSERT_EQ(msg.can_id, 0x602);
+    ASSERT_EQ(msg.size, 8);
+    EXPECT_THAT(
+        std::vector<uint8_t>(msg.data, msg.data + 8),
+        ElementsAre(0x2F, 0x01, 0x18, 0x03, 0xFE, 0x00, 0x00, 0x00)
+    );
+}
+
+TEST(StateMachine, download_16) {
+    StateMachine machine(2);
+    canbus::Message msg = machine.download<uint16_t>(0x1801, 3, 0x1234);
+    ASSERT_EQ(msg.can_id, 0x602);
+    ASSERT_EQ(msg.size, 8);
+    EXPECT_THAT(
+        std::vector<uint8_t>(msg.data, msg.data + 8),
+        ElementsAre(0x2B, 0x01, 0x18, 0x03, 0x34, 0x12, 0x00, 0x00)
+    );
+}
+
+TEST(StateMachine, download_32) {
+    StateMachine machine(2);
+    canbus::Message msg = machine.download<uint32_t>(0x1801, 3, 0x12345678);
+    ASSERT_EQ(msg.can_id, 0x602);
+    ASSERT_EQ(msg.size, 8);
+    EXPECT_THAT(
+        std::vector<uint8_t>(msg.data, msg.data + 8),
+        ElementsAre(0x23, 0x01, 0x18, 0x03, 0x78, 0x56, 0x34, 0x12)
+    );
+}
+
 TEST(StateMachine, set_and_get) {
     StateMachine machine(2);
     uint16_t value = 0x1234;
