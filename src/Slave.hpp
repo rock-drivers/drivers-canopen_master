@@ -22,7 +22,7 @@ namespace canopen_master {
      */
     class Slave {
     public:
-        Slave(uint8_t nodeId);
+        Slave(StateMachine& state_machine);
         virtual ~Slave();
 
         /** Query the canopen node state */
@@ -122,8 +122,6 @@ namespace canopen_master {
 
         virtual Update process(canbus::Message const& message);
 
-        StateMachine& getStateMachine();
-
         /** Create the given RPDO message
          *
          * The PDO message has to have been declared first with
@@ -135,7 +133,7 @@ namespace canopen_master {
         canbus::Message getRPDOMessage(unsigned int pdoIndex);
 
     protected:
-        StateMachine mCANOpen;
+        StateMachine& mCANOpen;
     };
 
     #define CANOPEN_SDO_UPDATE_CASE(object, update_id) \

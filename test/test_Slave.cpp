@@ -8,10 +8,12 @@ using namespace canopen_master;
 using testing::ElementsAreArray;
 
 struct SlaveTest : public ::testing::Test {
+    StateMachine state_machine;
     Slave slave;
 
     SlaveTest()
-        : slave(42) {
+        : state_machine(42)
+        , slave(state_machine) {
     }
 };
 
@@ -88,7 +90,7 @@ TEST_F(SlaveTest, it_sets_and_gets_an_object) {
 
 TEST_F(SlaveTest, it_allows_adding_offset_to_id_and_subid_in_get_and_set) {
     slave.set<Test_100_1>(0x12345678, 1, 2);
-    ASSERT_EQ(0x12345678, slave.getStateMachine().get<uint32_t>(0x101, 3));
+    ASSERT_EQ(0x12345678, state_machine.get<uint32_t>(0x101, 3));
     auto value = slave.get<Test_100_1>(1, 2);
     ASSERT_EQ(0x12345678, value);
 }

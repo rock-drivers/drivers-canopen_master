@@ -12,8 +12,8 @@ canbus::Message canopen_master::querySync() {
     return msg;
 }
 
-Slave::Slave(uint8_t nodeId)
-    : mCANOpen(nodeId) {
+Slave::Slave(StateMachine& state_machine)
+    : mCANOpen(state_machine) {
 }
 
 Slave::~Slave() {
@@ -54,8 +54,4 @@ Update Slave::process(canbus::Message const& message) {
         default:
             return Update();
     }
-}
-
-StateMachine& Slave::getStateMachine() {
-    return mCANOpen;
 }
