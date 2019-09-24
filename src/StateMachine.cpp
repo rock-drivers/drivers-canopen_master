@@ -119,7 +119,7 @@ StateMachine::Update StateMachine::processPDOReceive(int pdoIndex, canbus::Messa
         offset += m.size;
         update.addUpdate(m.objectId, m.subId);
     }
-    if (update.hasUpdatedObjects()) {
+    if (!update.hasUpdatedObjects()) {
         return Update(PROCESSED_PDO_UNEXPECTED);
     }
     else {
@@ -335,7 +335,7 @@ void StateMachine::Update::addUpdate(uint16_t objectId, int8_t subId)
 
 bool StateMachine::Update::hasUpdatedObjects() const
 {
-    return update_count == 0;
+    return update_count != 0;
 }
 
 bool StateMachine::Update::hasUpdatedObject(uint16_t objectId, int8_t subId) const

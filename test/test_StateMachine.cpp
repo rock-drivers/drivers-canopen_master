@@ -510,10 +510,31 @@ TEST(Update, it_is_reporting_IGNORED_MESSAGE_by_default) {
     ASSERT_EQ(StateMachine::PROCESSED_IGNORED_MESSAGE, update.mode);
 }
 
+TEST(Update, it_has_no_updated_objects_by_default) {
+    Update update;
+    ASSERT_FALSE(update.hasUpdatedObjects());
+}
+
+TEST(Update, it_reports_that_it_has_updated_objects_once_some_are_added) {
+    Update update;
+    update.addUpdate(10, 20);
+    ASSERT_TRUE(update.hasUpdatedObjects());
+}
+
 TEST(Update, it_reports_if_an_object_has_been_updated) {
     Update update;
     update.addUpdate(10, 20);
     ASSERT_TRUE(update.hasUpdatedObject(10, 20));
+}
+
+TEST(Update, it_handles_multiple_objects) {
+    Update update;
+    update.addUpdate(10, 20);
+    update.addUpdate(11, 21);
+    update.addUpdate(12, 22);
+    ASSERT_TRUE(update.hasUpdatedObject(10, 20));
+    ASSERT_TRUE(update.hasUpdatedObject(11, 21));
+    ASSERT_TRUE(update.hasUpdatedObject(12, 22));
 }
 
 struct DictionaryObject {
