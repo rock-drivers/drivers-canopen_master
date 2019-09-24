@@ -3,7 +3,6 @@
 
 #include <canopen_master/StateMachine.hpp>
 #include <canopen_master/Frame.hpp>
-#include <canopen_master/Update.hpp>
 #include <canopen_master/Objects.hpp>
 
 namespace canopen_master {
@@ -120,7 +119,7 @@ namespace canopen_master {
             );
         }
 
-        virtual Update process(canbus::Message const& message);
+        virtual StateMachine::Update process(canbus::Message const& message);
 
         /** Create the given RPDO message
          *

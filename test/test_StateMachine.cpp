@@ -504,3 +504,55 @@ TEST(StateMachine, configurePDO)
     ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg[8].data + 3));
     ASSERT_EQ(0x282,      fromLittleEndian<uint32_t>(msg[8].data + 4));
 }
+
+TEST(Update, it_is_reporting_IGNORED_MESSAGE_by_default) {
+    Update update;
+    ASSERT_EQ(StateMachine::PROCESSED_IGNORED_MESSAGE, update.mode);
+}
+
+TEST(Update, it_reports_if_an_object_has_been_updated) {
+    Update update;
+    update.addUpdate(10, 20);
+    ASSERT_TRUE(update.hasUpdatedObject(10, 20));
+}
+
+struct DictionaryObject {
+    static const int OBJECT_ID = 10;
+    static const int OBJECT_SUB_ID = 20;
+};
+
+TEST(Update, it_adds_an_update_with_a_dictionary_type) {
+    Update update;
+    update.addUpdate<DictionaryObject>();
+    ASSERT_TRUE(update.hasUpdatedObject(10, 20));
+}
+
+TEST(Update, it_accepts_an_id_offset_when_adding_an_update_with_a_dictionary_type) {
+    Update update;
+    update.addUpdate<DictionaryObject>(5, 0);
+    ASSERT_TRUE(update.hasUpdatedObject(15, 20));
+}
+
+TEST(Update, it_accepts_a_sub_id_offset_when_adding_an_update_with_a_dictionary_type) {
+    Update update;
+    update.addUpdate<DictionaryObject>(0, 5);
+    ASSERT_TRUE(update.hasUpdatedObject(10, 25));
+}
+
+TEST(Update, it_can_be_queried_with_a_dictionary_type) {
+    Update update;
+    update.addUpdate(10, 20);
+    ASSERT_TRUE(update.hasUpdatedObject<DictionaryObject>());
+}
+
+TEST(Update, it_accepts_an_object_id_offset_when_queries_with_a_dictionary_type) {
+    Update update;
+    update.addUpdate(10, 25);
+    ASSERT_TRUE(update.hasUpdatedObject<DictionaryObject>(0, 5));
+}
+
+TEST(Update, it_accepts_an_object_sub_id_offset_when_queries_with_a_dictionary_type) {
+    Update update;
+    update.addUpdate(15, 20);
+    ASSERT_TRUE(update.hasUpdatedObject<DictionaryObject>(5, 0));
+}

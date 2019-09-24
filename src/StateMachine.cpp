@@ -340,7 +340,9 @@ bool StateMachine::Update::hasUpdatedObjects() const
 
 bool StateMachine::Update::hasUpdatedObject(uint16_t objectId, int8_t subId) const
 {
-    return find(updated, updated + update_count, ObjectIdentifier(objectId, subId)) != updated + update_count;
+    return find(updated, updated + update_count,
+                ObjectIdentifier(objectId, subId))
+           != updated + update_count;
 }
 
 bool StateMachine::Update::operator ==(Update const& other) const

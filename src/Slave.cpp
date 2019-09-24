@@ -1,5 +1,4 @@
 #include <canopen_master/Slave.hpp>
-#include <canopen_master/Update.hpp>
 #include <canopen_master/Objects.hpp>
 
 using namespace canopen_master;
@@ -39,19 +38,6 @@ NODE_STATE Slave::getNodeState() const {
         update |= update_id; \
         break;
 
-Update Slave::process(canbus::Message const& message) {
-    StateMachine::Update canUpdate = mCANOpen.process(message);
-    switch(canUpdate.mode) {
-        case StateMachine::PROCESSED_HEARTBEAT:
-            return Update::UpdatedObjects(UPDATE_HEARTBEAT);
-        case StateMachine::PROCESSED_SDO_INITIATE_DOWNLOAD:
-        {
-            // Ack of a upload request
-            auto object = canUpdate.updated[0];
-            return Update::Ack(object.first, object.second);
-        }
-
-        default:
-            return Update();
-    }
+StateMachine::Update Slave::process(canbus::Message const& message) {
+    return mCANOpen.process(message);
 }

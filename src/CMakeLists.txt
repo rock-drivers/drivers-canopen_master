@@ -3,7 +3,7 @@ rock_library(canopen_master
         PDOMapping.cpp Exceptions.cpp Slave.cpp
     HEADERS Frame.hpp NMT.hpp SDO.hpp StateMachine.hpp Exceptions.hpp
         Emergency.hpp PDO.hpp PDOMapping.hpp PDOCommunicationParameters.hpp
-        Update.hpp Slave.hpp Objects.hpp
+        Slave.hpp Objects.hpp
     DEPS_PKGCONFIG canbus base-types)
 
 rock_executable(canopen_ctl Main.cpp
