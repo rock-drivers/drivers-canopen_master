@@ -133,7 +133,7 @@ namespace canopen_master
         canbus::Message download(uint16_t objectId, uint8_t subId, T value) const
         {
             uint8_t data[4];
-            toLittleEndian<uint16_t>(data, value);
+            toLittleEndian<T>(data, value);
             return download(objectId, subId, data, sizeof(value));
         }
 
