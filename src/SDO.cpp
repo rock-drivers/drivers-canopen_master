@@ -8,9 +8,9 @@ using namespace canopen_master;
 canbus::Message canopen_master::makeSDOInitiateDomainUpload(uint8_t nodeId, uint16_t objectIndex, uint8_t objectSubindex)
 {
     canbus::Message msg;
-    std::memset(&msg, 0, sizeof(msg));
     msg.can_id = FUNCTION_SDO_RECEIVE + nodeId;
     msg.size = 8;
+    std::memset(msg.data, 0, sizeof(msg.data));
     msg.data[0] = 0x40;
     msg.data[1] = (objectIndex >> 0) & 0xFF;
     msg.data[2] = (objectIndex >> 8) & 0xFF;

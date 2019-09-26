@@ -22,14 +22,25 @@ namespace canopen_master
         enum UPDATE_EVENT
         {
             PROCESSED_IGNORED_MESSAGE,
+            /** Message was not from the node handled by this StateMachine */
             PROCESSED_NOT_FOR_ME,
+            /** Processed a TPDO object that had been declared with declareTPDO */
             PROCESSED_PDO,
+            /** Received a TPDO object not declared with declareTPDO */
             PROCESSED_PDO_UNEXPECTED,
+            /**
+             * Updated an object with data received from the remote device
+             */
             PROCESSED_SDO,
+            /**
+             * Ack for a SDO download request, i.e. the object has been written
+             */
             PROCESSED_SDO_INITIATE_DOWNLOAD,
             PROCESSED_SDO_IGNORED_COMMAND,
             PROCESSED_SDO_UNKNOWN_COMMAND,
+            /** Received a heartbeat */
             PROCESSED_HEARTBEAT,
+            /** Received an emergency message with no error in it */
             PROCESSED_EMERGENCY_NO_ERROR
         };
 
@@ -46,11 +57,29 @@ namespace canopen_master
             /** Adds an object to the update set */
             void addUpdate(uint16_t objectId, int8_t subId);
 
+            /**
+             * Adds an object to the update set using a type representing the
+             * dictionary object
+             */
+            template<typename T>
+            void addUpdate(uint16_t objectIdOffset = 0, int8_t subIdOffset = 0) {
+                return addUpdate(T::OBJECT_ID + objectIdOffset,
+                                 T::OBJECT_SUB_ID + subIdOffset);
+            }
+
             /** Whether this update has updated objects */
             bool hasUpdatedObjects() const;
 
             /** Whether this update has updated objects */
             bool hasUpdatedObject(uint16_t objectId, int8_t subId) const;
+
+            /** Whether this update has updated objects */
+            template<typename T>
+            bool hasUpdatedObject(int objectIdOffset = 0,
+                                  int objectSubIdOffset = 0) const {
+                return hasUpdatedObject(T::OBJECT_ID + objectIdOffset,
+                                        T::OBJECT_SUB_ID + objectSubIdOffset);
+            }
 
             bool operator ==(Update const& other) const;
 
