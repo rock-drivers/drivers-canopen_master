@@ -7,7 +7,8 @@ using namespace std;
 using namespace canopen_master;
 
 canbus::Message canopen_master::disablePDOMessage(
-        bool transmit, uint16_t nodeId, int pdoIndex, uint32_t cob_id)
+    bool transmit, uint16_t nodeId, int pdoIndex, uint32_t cob_id,
+    bool reserved_bit_quirk)
 {
     uint32_t sdoObjId = getPDOParametersObjectId(transmit, pdoIndex);
     if (!cob_id) {
@@ -18,17 +19,29 @@ canbus::Message canopen_master::disablePDOMessage(
     uint8_t data[4];
     toLittleEndian(data, cob_id);
     auto message = makeSDOInitiateDomainDownload(nodeId, sdoObjId, 1, data, 4);
+
     message.data[7] |= 0x80;
+
+    if (reserved_bit_quirk) {
+        // Bit 30 is "reserved, do not care", but at least the Roboteq controller
+        // requires it to be set to 1. Set to 1, and hope that other controllers
+        // will indeed "not care"
+        message.data[7] |= 0xC0;
+    }
     return message;
 }
 
 vector<canbus::Message> canopen_master::makePDOConfigurationMessages(
         bool transmit, uint16_t nodeId, int pdoIndex,
         PDOCommunicationParameters const& parameters,
-        PDOMapping const& mappings)
+        PDOMapping const& mappings,
+        bool cobid_message_reserved_bit_quirk)
 {
     auto messages = makePDOCommunicationParametersMessages(
         transmit, nodeId, pdoIndex, parameters);
+    if (cobid_message_reserved_bit_quirk) {
+        messages[0].data[7] |= 0x40;
+    }
     auto pdoCOB_IDSetting = messages[0];
     // Disable the PDO by setting bit 31. We will reset this
     // later.

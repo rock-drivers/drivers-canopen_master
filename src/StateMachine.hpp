@@ -44,6 +44,10 @@ namespace canopen_master
             PROCESSED_EMERGENCY_NO_ERROR
         };
 
+        enum QUIRKS {
+            PDO_COBID_MESSAGE_RESERVED_BIT_QUIRK = 0x1
+        };
+
         struct Update
         {
             UPDATE_EVENT mode;
@@ -94,6 +98,8 @@ namespace canopen_master
          */
         uint8_t nodeId;
 
+        uint64_t quirks = 0;
+
         struct ObjectValue
         {
             uint16_t objectId;
@@ -131,6 +137,10 @@ namespace canopen_master
         /** Change the node state
          */
         canbus::Message queryStateTransition(NODE_STATE_TRANSITION transition) const;
+
+        /** Set out-of-spec of ill-specified behaviors
+         */
+        void setQuirks(uint64_t field);
 
         /** Returns the last known state
          *
