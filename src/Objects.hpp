@@ -16,8 +16,8 @@ namespace canopen_master {
     CANOPEN_DEFINE_OBJECT(0x1000, 0, DeviceType,                    std::uint32_t);
     CANOPEN_DEFINE_OBJECT(0x1001, 0, ErrorRegister,                 std::uint8_t);
     CANOPEN_DEFINE_OBJECT(0x1002, 0, ManufacturerStatusRegister,    std::uint32_t);
-    CANOPEN_DEFINE_OBJECT(0x1016, 2, ConsumerHeartbeatTime,         std::uint32_t);
-    CANOPEN_DEFINE_OBJECT(0x1017, 0, ProducerHeartbeatTime,         std::uint32_t);
+    CANOPEN_DEFINE_OBJECT(0x1016, 2, ConsumerHeartbeatTime,         std::uint16_t);
+    CANOPEN_DEFINE_OBJECT(0x1017, 0, ProducerHeartbeatTime,         std::uint16_t);
     CANOPEN_DEFINE_OBJECT(0x1018, 4, IdentityObject,                std::uint32_t);
 }
 
