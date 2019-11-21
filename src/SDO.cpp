@@ -28,8 +28,7 @@ canbus::Message canopen_master::makeSDOInitiateDomainDownload(
         );
     }
 
-    canbus::Message msg;
-    std::memset(&msg, 0, sizeof(msg));
+    auto msg = canbus::Message::Zeroed();
     msg.can_id = FUNCTION_SDO_RECEIVE + nodeId;
     msg.size = 8;
     // Immediate transfer with size
