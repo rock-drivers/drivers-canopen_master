@@ -7,27 +7,41 @@ using namespace std;
 using namespace canopen_master;
 
 canbus::Message canopen_master::disablePDOMessage(
-        bool transmit, uint16_t nodeId, int pdoIndex, uint32_t cob_id)
+    bool transmit, uint16_t nodeId, int pdoIndex, uint32_t cob_id,
+    bool reserved_bit_quirk)
 {
     uint32_t sdoObjId = getPDOParametersObjectId(transmit, pdoIndex);
-    if (!cob_id)
+    if (!cob_id) {
         cob_id = getPDODefaultCOBID(transmit, pdoIndex, nodeId);
+    }
 
     // Set up COB-ID
     uint8_t data[4];
     toLittleEndian(data, cob_id);
     auto message = makeSDOInitiateDomainDownload(nodeId, sdoObjId, 1, data, 4);
+
     message.data[7] |= 0x80;
+
+    if (reserved_bit_quirk) {
+        // Bit 30 is "reserved, do not care", but at least the Roboteq controller
+        // requires it to be set to 1. Set to 1, and hope that other controllers
+        // will indeed "not care"
+        message.data[7] |= 0xC0;
+    }
     return message;
 }
 
 vector<canbus::Message> canopen_master::makePDOConfigurationMessages(
         bool transmit, uint16_t nodeId, int pdoIndex,
         PDOCommunicationParameters const& parameters,
-        PDOMapping const& mappings)
+        PDOMapping const& mappings,
+        bool cobid_message_reserved_bit_quirk)
 {
     auto messages = makePDOCommunicationParametersMessages(
         transmit, nodeId, pdoIndex, parameters);
+    if (cobid_message_reserved_bit_quirk) {
+        messages[0].data[7] |= 0x40;
+    }
     auto pdoCOB_IDSetting = messages[0];
     // Disable the PDO by setting bit 31. We will reset this
     // later.
@@ -37,7 +51,8 @@ vector<canbus::Message> canopen_master::makePDOConfigurationMessages(
         transmit, nodeId, pdoIndex, mappings);
     messages.insert(
         messages.end(),
-        mappingMessages.begin(), mappingMessages.end());
+        mappingMessages.begin(), mappingMessages.end()
+    );
 
     // Now re-enable the message
     messages.push_back(pdoCOB_IDSetting);
@@ -50,23 +65,30 @@ vector<canbus::Message> canopen_master::makePDOCommunicationParametersMessages(
 {
     uint32_t sdoObjId = getPDOParametersObjectId(transmit, pdoIndex);
     uint32_t cob_id = parameters.cob_id;
-    if (!cob_id)
+    if (!cob_id) {
         cob_id = getPDODefaultCOBID(transmit, pdoIndex, nodeId);
+    }
 
     vector<canbus::Message> messages;
 
     // Set up COB-ID
     uint8_t data[4];
     toLittleEndian(data, cob_id);
-    messages.push_back(makeSDOInitiateDomainDownload(nodeId, sdoObjId, 1, data, 4));
+    messages.push_back(
+        makeSDOInitiateDomainDownload(nodeId, sdoObjId, 1, data, 4)
+    );
 
     // Set up mode
     data[0] = 0;
-    switch(parameters.transmission_mode)
+    switch (parameters.transmission_mode)
     {
         case PDO_SYNCHRONOUS:
-            if (parameters.sync_period > 251)
-                throw std::invalid_argument("invalid sync_period in PDO_SYNCHRONOUS mode, must be between 0 and 251");
+            if (parameters.sync_period > 251) {
+                throw std::invalid_argument(
+                    "invalid sync_period in PDO_SYNCHRONOUS mode, "
+                    "must be between 0 and 251"
+                );
+            }
             data[0] = parameters.sync_period;
             break;
         case PDO_SYNCHRONOUS_RTR_ONLY:
@@ -84,15 +106,17 @@ vector<canbus::Message> canopen_master::makePDOCommunicationParametersMessages(
     if (transmit && parameters.transmission_mode >= PDO_ASYNCHRONOUS_RTR_ONLY)
     {
         uint64_t inhibit_time_us  = parameters.inhibit_time.toMicroseconds();
-        if (inhibit_time_us > 65535)
+        if (inhibit_time_us > 65535) {
             throw std::invalid_argument("inhibit time too big (must be lower than 6.5s)");
+        }
         toLittleEndian(data, static_cast<uint16_t>(inhibit_time_us / 100));
         messages.push_back(
             makeSDOInitiateDomainDownload(nodeId, sdoObjId, 3, data, 2));
 
         uint64_t timer_period_ms = parameters.timer_period.toMilliseconds();
-        if (timer_period_ms > 65535)
+        if (timer_period_ms > 65535) {
             throw std::invalid_argument("timer period too big (must be lower than 65s)");
+        }
         toLittleEndian(data, static_cast<uint16_t>(timer_period_ms));
         messages.push_back(
             makeSDOInitiateDomainDownload(nodeId, sdoObjId, 5, data, 2));
@@ -114,10 +138,12 @@ bool canopen_master::isPDOTransmit(uint16_t functionCode)
 
 uint16_t canopen_master::getPDODefaultCOBID(bool transmit, int pdoIndex, uint16_t nodeId)
 {
-    if (transmit)
+    if (transmit) {
         return FUNCTION_PDO0_TRANSMIT + (pdoIndex << 8) + nodeId;
-    else
+    }
+    else {
         return FUNCTION_PDO0_RECEIVE  + (pdoIndex << 8) + nodeId;
+    }
 }
 
 int canopen_master::getPDOIndex(uint16_t functionCode)
@@ -134,8 +160,9 @@ uint16_t canopen_master::getPDOMappingObjectId(bool transmit, uint8_t pdoIndex)
     return (transmit ? 0x1A00 : 0x1600) + pdoIndex;
 }
 
-std::vector<canbus::Message> canopen_master::makePDOMappingMessages(bool transmit, uint8_t nodeId, uint8_t pdoIndex, PDOMapping const& mapping)
-{
+std::vector<canbus::Message> canopen_master::makePDOMappingMessages(
+    bool transmit, uint8_t nodeId, uint8_t pdoIndex, PDOMapping const& mapping
+) {
     std::vector<canbus::Message> result;
     uint16_t pdoObjectId = getPDOMappingObjectId(transmit, pdoIndex);
     uint8_t mappingSize = mapping.mappings.size();
@@ -150,7 +177,9 @@ std::vector<canbus::Message> canopen_master::makePDOMappingMessages(bool transmi
         buffer[0] = m.size * 8;
         buffer[1] = m.subId;
         toLittleEndian(buffer + 2, m.objectId);
-        result.push_back(makeSDOInitiateDomainDownload(nodeId, pdoObjectId, i + 1, buffer, 4));
+        result.push_back(makeSDOInitiateDomainDownload(
+            nodeId, pdoObjectId, i + 1, buffer, 4
+        ));
     }
 
     toLittleEndian(buffer, static_cast<int32_t>(mappingSize));

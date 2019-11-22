@@ -29,6 +29,10 @@ StateMachine::StateMachine(uint8_t nodeId)
     tpdoMappings.resize(MAX_PDO);
 }
 
+void StateMachine::setQuirks(uint64_t value) {
+    this->quirks = value;
+}
+
 bool StateMachine::hasState() const
 {
     return !lastStateUpdate.isNull();
@@ -273,13 +277,17 @@ void StateMachine::validatePDOMapping(PDOMapping const& mapping) const
 
 canbus::Message StateMachine::disablePDO(bool transmit, uint8_t pdoIndex, uint32_t cob_id) const
 {
-    return disablePDOMessage(transmit, nodeId, pdoIndex, cob_id);
+    return disablePDOMessage(transmit, nodeId, pdoIndex, cob_id,
+                             quirks & PDO_COBID_MESSAGE_RESERVED_BIT_QUIRK);
 }
 
 std::vector<canbus::Message> StateMachine::configurePDO(bool transmit, uint8_t pdoIndex,
     PDOCommunicationParameters const& parameters, PDOMapping const& mapping) const
 {
-    return makePDOConfigurationMessages(transmit, nodeId, pdoIndex, parameters, mapping);
+    return makePDOConfigurationMessages(
+        transmit, nodeId, pdoIndex, parameters, mapping,
+        quirks & PDO_COBID_MESSAGE_RESERVED_BIT_QUIRK
+    );
 }
 
 std::vector<canbus::Message> StateMachine::configurePDOMapping(bool transmit, uint8_t pdoIndex, PDOMapping const& mapping) const

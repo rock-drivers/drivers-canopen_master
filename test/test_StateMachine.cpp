@@ -505,6 +505,51 @@ TEST(StateMachine, configurePDO)
     ASSERT_EQ(0x282,      fromLittleEndian<uint32_t>(msg[8].data + 4));
 }
 
+TEST(StateMachine, configurePDO_COBID_MESSAGE_RESERVED_BIT_QUIRK)
+{
+    PDOCommunicationParameters parameters;
+    parameters.transmission_mode = PDO_ASYNCHRONOUS;
+
+    PDOMapping mappings;
+    mappings.add(0x6000, 0x02, 1);
+    mappings.add(0x6401, 0x01, 2);
+
+    StateMachine machine(2);
+    machine.setQuirks(StateMachine::PDO_COBID_MESSAGE_RESERVED_BIT_QUIRK);
+    vector<canbus::Message> msg =
+        machine.configurePDO(true, 1, parameters, mappings);
+
+    ASSERT_EQ(9, msg.size());
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg[0].data + 1));
+    ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg[0].data + 3));
+    ASSERT_EQ(0xC0000282, fromLittleEndian<uint32_t>(msg[0].data + 4));
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg[8].data + 1));
+    ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg[8].data + 3));
+    ASSERT_EQ(0x40000282, fromLittleEndian<uint32_t>(msg[8].data + 4));
+}
+
+TEST(StateMachine, disablePDO)
+{
+    StateMachine machine(2);
+    canbus::Message msg = machine.disablePDO(true, 1);
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg.data + 1));
+    ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg.data + 3));
+    ASSERT_EQ(0x80000282, fromLittleEndian<uint32_t>(msg.data + 4));
+}
+
+TEST(StateMachine, disablePDO_PDO_COBID_MESSAGE_RESERVED_BIT_QUIRK)
+{
+    StateMachine machine(2);
+    machine.setQuirks(StateMachine::PDO_COBID_MESSAGE_RESERVED_BIT_QUIRK);
+    canbus::Message msg = machine.disablePDO(true, 1);
+
+    ASSERT_EQ(0x1801,     fromLittleEndian<uint16_t>(msg.data + 1));
+    ASSERT_EQ(1,          fromLittleEndian<uint8_t>(msg.data + 3));
+    ASSERT_EQ(0xC0000282, fromLittleEndian<uint32_t>(msg.data + 4));
+}
 TEST(Update, it_is_reporting_IGNORED_MESSAGE_by_default) {
     Update update;
     ASSERT_EQ(StateMachine::PROCESSED_IGNORED_MESSAGE, update.mode);

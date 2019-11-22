@@ -16,7 +16,8 @@ namespace canopen_master
     uint16_t getPDOMappingObjectId(bool transmit, uint8_t pdoIndex);
 
     canbus::Message disablePDOMessage(
-        bool transmit, uint16_t nodeId, int pdoIndex, uint32_t cob_id);
+        bool transmit, uint16_t nodeId, int pdoIndex, uint32_t cob_id,
+        bool reserved_bit_quirk = false);
     std::vector<canbus::Message> makePDOCommunicationParametersMessages(
         bool transmit, uint16_t nodeId, int pdoIndex,
         PDOCommunicationParameters const& parameters);
@@ -26,7 +27,8 @@ namespace canopen_master
     std::vector<canbus::Message> makePDOConfigurationMessages(
         bool transmit, uint16_t nodeId, int pdoIndex,
         PDOCommunicationParameters const& parameters,
-        PDOMapping const& mappings);
+        PDOMapping const& mappings,
+        bool cobid_message_reserved_bit_quirk = false);
 }
 
 #endif

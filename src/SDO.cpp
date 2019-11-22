@@ -18,14 +18,17 @@ canbus::Message canopen_master::makeSDOInitiateDomainUpload(uint8_t nodeId, uint
     return msg;
 }
 
-canbus::Message canopen_master::makeSDOInitiateDomainDownload(uint8_t nodeId, uint16_t objectIndex, uint8_t objectSubindex,
-    uint8_t const* data, uint32_t size)
-{
-    if (size > 4)
-        throw Unsupported("canopen_master: this library does not support non-expedited transfers");
+canbus::Message canopen_master::makeSDOInitiateDomainDownload(
+    uint8_t nodeId, uint16_t objectIndex, uint8_t objectSubindex,
+    uint8_t const* data, uint32_t size
+) {
+    if (size > 4) {
+        throw Unsupported(
+            "canopen_master: this library does not support non-expedited transfers"
+        );
+    }
 
-    canbus::Message msg;
-    std::memset(&msg, 0, sizeof(msg));
+    auto msg = canbus::Message::Zeroed();
     msg.can_id = FUNCTION_SDO_RECEIVE + nodeId;
     msg.size = 8;
     // Immediate transfer with size
