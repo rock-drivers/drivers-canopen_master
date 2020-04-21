@@ -149,6 +149,9 @@ StateMachine::Update StateMachine::processSDOReceive(canbus::Message const& msg)
         }
         uint16_t objectId = getSDOObjectID(msg);
         uint8_t  subId    = getSDOObjectSubID(msg);
+        if (msg.time.isNull()) {
+            throw ProtocolError("received CAN message with zero timestamp");
+        }
         setObjectValue(objectId, subId, msg.time, msg.data + 4, cmd.size);
         return Update(PROCESSED_SDO, objectId, subId);
     }
@@ -176,6 +179,12 @@ void StateMachine::setObjectValue(uint16_t objectId, uint8_t subId, base::Time c
 
     if (value.data.size() != dataSize)
         throw ProtocolError("unexpected object size in dictionary");
+
+    if (time.isNull()) {
+        throw std::invalid_argument(
+            "attempting to set an object with a zero update time"
+        );
+    }
 
     value.lastUpdate = time;
     std::copy(data, data + dataSize, value.data.data());
