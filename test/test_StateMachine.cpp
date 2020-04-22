@@ -165,6 +165,12 @@ TEST(StateMachine, set_and_get) {
     ASSERT_EQ(time, machine.timestamp(0x12, 0x1));
 }
 
+TEST(StateMachine, setRejectsZeroUpdateTime) {
+    StateMachine machine(2);
+    uint16_t value = 0x1234;
+    ASSERT_THROW(machine.set(0x12, 0x1, value, base::Time()), std::invalid_argument);
+}
+
 TEST(StateMachine, getFailsOnADeclaredButUnreadObject) {
     StateMachine machine(2);
     machine.declare(0x1801, 3, 2);
@@ -205,6 +211,22 @@ TEST(StateMachine, processUploadReply) {
     msg.data[7] = 0x00;
     ASSERT_EQ(Update(StateMachine::PROCESSED_SDO, 0x1801, 3), machine.process(msg));
     ASSERT_EQ(0x3FE, machine.get<uint16_t>(0x1801, 3));
+}
+
+TEST(StateMachine, processUploadReplyRejectsZeroUpdateTime) {
+    StateMachine machine(2);
+    canbus::Message msg;
+    msg.time = base::Time();
+    msg.can_id = 0x582;
+    msg.data[0] = 0x4B;
+    msg.data[1] = 0x01;
+    msg.data[2] = 0x18;
+    msg.data[3] = 0x03;
+    msg.data[4] = 0xFE;
+    msg.data[5] = 0x03;
+    msg.data[6] = 0x00;
+    msg.data[7] = 0x00;
+    ASSERT_THROW(machine.process(msg), ProtocolError);
 }
 
 TEST(StateMachine, processSDOAbort)
