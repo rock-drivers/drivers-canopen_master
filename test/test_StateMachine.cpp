@@ -156,6 +156,19 @@ TEST(StateMachine, download_32) {
     );
 }
 
+
+TEST(StateMachine, download_unknown) {
+    StateMachine machine(2, true);
+    std::vector<uint8_t> raw { 0xFE, 0x00, 0x00, 0x00 };
+    canbus::Message msg = machine.download(0x1801, 3, raw.data(), raw.size());
+    ASSERT_EQ(msg.can_id, 0x602);
+    ASSERT_EQ(msg.size, 8);
+    EXPECT_THAT(
+        std::vector<uint8_t>(msg.data, msg.data + 8),
+        ElementsAre(0x22, 0x01, 0x18, 0x03, 0xFE, 0x00, 0x00, 0x00)
+    );
+}
+
 TEST(StateMachine, set_and_get) {
     StateMachine machine(2);
     uint16_t value = 0x1234;
@@ -193,7 +206,9 @@ TEST(StateMachine, downloadOfADeclaredObject) {
 TEST(StateMachine, downloadFailsIfDeclaredSizeMismatches) {
     StateMachine machine(2);
     machine.declare(0x1801, 3, 4);
-    ASSERT_THROW(machine.download(0x1801, 3, static_cast<uint16_t>(0)), ObjectSizeMismatch);
+    ASSERT_THROW(
+        machine.download(0x1801, 3, static_cast<uint16_t>(0)),
+        ObjectSizeMismatch);
 }
 
 TEST(StateMachine, processUploadReply) {
@@ -211,6 +226,44 @@ TEST(StateMachine, processUploadReply) {
     msg.data[7] = 0x00;
     ASSERT_EQ(Update(StateMachine::PROCESSED_SDO, 0x1801, 3), machine.process(msg));
     ASSERT_EQ(0x3FE, machine.get<uint16_t>(0x1801, 3));
+}
+
+TEST(StateMachine, processUnknownSizeUploadReply) {
+    StateMachine machine(2, true);
+    canbus::Message msg;
+    msg.time = base::Time::now();
+    msg.can_id = 0x582;
+    msg.data[0] = 0x42;
+    msg.data[1] = 0x01;
+    msg.data[2] = 0x18;
+    msg.data[3] = 0x03;
+    msg.data[4] = 0xFE;
+    msg.data[5] = 0x03;
+    msg.data[6] = 0xFF;
+    msg.data[7] = 0xFF;
+    ASSERT_EQ(Update(StateMachine::PROCESSED_SDO, 0x1801, 3), machine.process(msg));
+    ASSERT_EQ(0x3FE, machine.get<uint16_t>(0x1801, 3));
+}
+
+TEST(StateMachine, processUnknownSizeUploadReplyOfAnAlreadyDefinedObject) {
+    StateMachine machine(2, true);
+    canbus::Message msg;
+    msg.time = base::Time::now();
+    msg.can_id = 0x582;
+    msg.data[0] = 0x42;
+    msg.data[1] = 0x01;
+    msg.data[2] = 0x18;
+    msg.data[3] = 0x03;
+    msg.data[4] = 0xFE;
+    msg.data[5] = 0x03;
+    msg.data[6] = 0xFF;
+    msg.data[7] = 0xFF;
+    machine.process(msg);
+
+    msg.data[4] = 0xEF;
+    msg.data[5] = 0xBE;
+    machine.process(msg);
+    ASSERT_EQ(0xBEEF, machine.get<uint16_t>(0x1801, 3));
 }
 
 TEST(StateMachine, processUploadReplyRejectsZeroUpdateTime) {

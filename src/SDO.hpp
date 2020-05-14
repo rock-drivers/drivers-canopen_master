@@ -32,7 +32,7 @@ namespace canopen_master
     canbus::Message makeSDOInitiateDomainUpload(uint8_t nodeId, uint16_t objectIndex, uint8_t objectSubindex);
     SDOCommand getSDOCommand(canbus::Message const& msg);
     canbus::Message makeSDOInitiateDomainDownload(uint8_t nodeId, uint16_t objectIndex, uint8_t objectSubindex,
-        uint8_t const* data, uint32_t size
+        uint8_t const* data, uint32_t size, bool sizeInData = true
     );
 
     void parseSDODomainTransferAbort(canbus::Message const& msg);

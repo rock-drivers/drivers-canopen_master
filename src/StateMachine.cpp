@@ -22,8 +22,9 @@ StateMachine::Dictionary::iterator StateMachine::declareInternal(uint16_t object
     ).first;
 }
 
-StateMachine::StateMachine(uint8_t nodeId)
+StateMachine::StateMachine(uint8_t nodeId, bool useUnknownSizes)
     : nodeId(nodeId)
+    , useUnknownSizes(useUnknownSizes)
 {
     rpdoMappings.resize(MAX_PDO);
     tpdoMappings.resize(MAX_PDO);
@@ -152,7 +153,12 @@ StateMachine::Update StateMachine::processSDOReceive(canbus::Message const& msg)
         if (msg.time.isNull()) {
             throw ProtocolError("received CAN message with zero timestamp");
         }
-        setObjectValue(objectId, subId, msg.time, msg.data + 4, cmd.size);
+        uint32_t dataSize = cmd.size;
+        if (useUnknownSizes) {
+            dataSize = 4;
+        }
+
+        setObjectValue(objectId, subId, msg.time, msg.data + 4, dataSize);
         return Update(PROCESSED_SDO, objectId, subId);
     }
     else if (cmd.command == SDO_INITIATE_DOMAIN_DOWNLOAD_REPLY)
@@ -237,7 +243,7 @@ canbus::Message StateMachine::download(uint16_t objectId, uint8_t subId, uint8_t
     if (knownSize && knownSize != size)
         throw ObjectSizeMismatch("attempting to write to a SDO object that has a mismatched size");
 
-    return makeSDOInitiateDomainDownload(nodeId, objectId, subId, data, size);
+    return makeSDOInitiateDomainDownload(nodeId, objectId, subId, data, size, !useUnknownSizes);
 }
 
 uint32_t StateMachine::get(uint16_t objectId, uint16_t subId, uint8_t* data, uint32_t bufferSize) const
