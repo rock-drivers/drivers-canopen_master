@@ -178,6 +178,26 @@ TEST(StateMachine, set_and_get) {
     ASSERT_EQ(time, machine.timestamp(0x12, 0x1));
 }
 
+TEST(StateMachine, getDefinesSizeOfObject) {
+    StateMachine machine(2, true);
+    canbus::Message msg;
+    msg.time = base::Time::now();
+    msg.can_id = 0x582;
+    msg.data[0] = 0x42;
+    msg.data[1] = 0x01;
+    msg.data[2] = 0x18;
+    msg.data[3] = 0x03;
+    msg.data[4] = 0xEF;
+    msg.data[5] = 0xBE;
+    msg.data[6] = 0xFF;
+    msg.data[7] = 0xFF;
+    machine.process(msg);
+    ASSERT_EQ(0xBEEF, machine.get<uint16_t>(0x1801, 3));
+    ASSERT_EQ(0xBEEF, machine.get<uint16_t>(0x1801, 3));
+    ASSERT_THROW(machine.get<uint32_t>(0x1801, 3), InvalidObjectType);
+    ASSERT_THROW(machine.get<uint8_t>(0x1801, 3), InvalidObjectType);
+}
+
 TEST(StateMachine, setRejectsZeroUpdateTime) {
     StateMachine machine(2);
     uint16_t value = 0x1234;
