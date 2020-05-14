@@ -163,6 +163,12 @@ namespace canopen_master
         /** Returns the node ID this state machine is talking to */
         uint8_t getNodeID() const;
 
+        /** Returns whether data size field will be unset in SDO communications */
+        uint8_t getUseUnknownSizes() const;
+
+        /** Sets whether data size field will be unset in SDO communications */
+        void setUseUnknownSizes(bool toggle);
+
         /** Process a message received from nodeId */
         Update process(canbus::Message const& msg);
 

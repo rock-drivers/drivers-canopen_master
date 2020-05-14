@@ -74,6 +74,15 @@ uint8_t StateMachine::getNodeID() const
     return nodeId;
 }
 
+uint8_t StateMachine::getUseUnknownSizes() const
+{
+    return useUnknownSizes;
+}
+
+void StateMachine::setUseUnknownSizes(bool toggle) {
+    useUnknownSizes = toggle;
+}
+
 StateMachine::Update StateMachine::process(canbus::Message const& msg)
 {
     if (canopen_master::getNodeID(msg) == nodeId)
