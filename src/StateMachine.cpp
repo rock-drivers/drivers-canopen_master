@@ -165,8 +165,10 @@ StateMachine::Update StateMachine::processSDOReceive(canbus::Message const& msg)
             throw ProtocolError("received CAN message with zero timestamp");
         }
         if (cmd.size == 0) {
-            cmd.size = 4;
-            if (!has(objectId, subId)) {
+            if (has(objectId, subId)) {
+                cmd.size = sizeOf(objectId, subId);
+            } else {
+                cmd.size = 4;
                 declareInternal(objectId, subId, cmd.size, false);
             }
         }

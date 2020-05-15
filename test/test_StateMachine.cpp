@@ -263,6 +263,9 @@ TEST(StateMachine, processUnknownSizeUploadReply) {
     msg.data[7] = 0xFF;
     ASSERT_EQ(Update(StateMachine::PROCESSED_SDO, 0x1801, 3), machine.process(msg));
     ASSERT_EQ(0x3FE, machine.get<uint16_t>(0x1801, 3));
+
+    // It should allow receiving with size bits unset even if we already know the size
+    ASSERT_EQ(Update(StateMachine::PROCESSED_SDO, 0x1801, 3), machine.process(msg));
 }
 
 TEST(StateMachine, processUnknownSizeUploadReplyOfAnAlreadyDefinedObject) {
