@@ -129,7 +129,7 @@ namespace canopen_master {
          * Which messages should be sent at what frequency is a matter of
          * documentation of the actual device driver.
          */
-        canbus::Message getRPDOMessage(unsigned int pdoIndex);
+        canbus::Message getRPDOMessage(unsigned int pdoIndex) const;
 
     protected:
         StateMachine& mCANOpen;

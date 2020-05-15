@@ -41,3 +41,7 @@ NODE_STATE Slave::getNodeState() const {
 StateMachine::Update Slave::process(canbus::Message const& message) {
     return mCANOpen.process(message);
 }
+
+canbus::Message Slave::getRPDOMessage(unsigned int pdoIndex) const {
+    return mCANOpen.getRPDOMessage(pdoIndex);
+}

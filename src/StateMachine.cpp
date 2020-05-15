@@ -11,19 +11,22 @@
 
 using namespace canopen_master;
 
-StateMachine::Dictionary::iterator StateMachine::declareInternal(uint16_t objectId, uint8_t subId, uint8_t size)
+StateMachine::Dictionary::iterator StateMachine::declareInternal(uint16_t objectId, uint8_t subId,
+                                                                 uint8_t size, bool knownSize)
 {
     ObjectValue value;
     value.objectId = objectId;
     value.subId = subId;
-    value.data.resize(size);
+    value.size = size;
+    value.knownSize = knownSize;
     return dictionary.insert(
         std::make_pair(ObjectIdentifier(objectId, subId), value)
     ).first;
 }
 
-StateMachine::StateMachine(uint8_t nodeId)
+StateMachine::StateMachine(uint8_t nodeId, bool useUnknownSizes)
     : nodeId(nodeId)
+    , useUnknownSizes(useUnknownSizes)
 {
     rpdoMappings.resize(MAX_PDO);
     tpdoMappings.resize(MAX_PDO);
@@ -69,6 +72,15 @@ canbus::Message StateMachine::queryStateTransition(
 uint8_t StateMachine::getNodeID() const
 {
     return nodeId;
+}
+
+uint8_t StateMachine::getUseUnknownSizes() const
+{
+    return useUnknownSizes;
+}
+
+void StateMachine::setUseUnknownSizes(bool toggle) {
+    useUnknownSizes = toggle;
 }
 
 StateMachine::Update StateMachine::process(canbus::Message const& msg)
@@ -152,6 +164,14 @@ StateMachine::Update StateMachine::processSDOReceive(canbus::Message const& msg)
         if (msg.time.isNull()) {
             throw ProtocolError("received CAN message with zero timestamp");
         }
+        if (cmd.size == 0) {
+            if (has(objectId, subId)) {
+                cmd.size = sizeOf(objectId, subId);
+            } else {
+                cmd.size = 4;
+                declareInternal(objectId, subId, cmd.size, false);
+            }
+        }
         setObjectValue(objectId, subId, msg.time, msg.data + 4, cmd.size);
         return Update(PROCESSED_SDO, objectId, subId);
     }
@@ -173,11 +193,11 @@ void StateMachine::setObjectValue(uint16_t objectId, uint8_t subId, base::Time c
 {
     auto dictionary_it = dictionary.find(ObjectIdentifier(objectId, subId));
     if (dictionary_it == dictionary.end())
-        dictionary_it = declareInternal(objectId, subId, dataSize);
+        dictionary_it = declareInternal(objectId, subId, dataSize, true);
 
     ObjectValue& value = dictionary_it->second;
 
-    if (value.data.size() != dataSize)
+    if ((value.size != dataSize) && value.knownSize)
         throw ProtocolError("unexpected object size in dictionary");
 
     if (time.isNull()) {
@@ -187,7 +207,7 @@ void StateMachine::setObjectValue(uint16_t objectId, uint8_t subId, base::Time c
     }
 
     value.lastUpdate = time;
-    std::copy(data, data + dataSize, value.data.data());
+    std::copy(data, data + dataSize, value.data);
 }
 
 canbus::Message StateMachine::upload(uint16_t objectId, uint8_t subId) const
@@ -197,7 +217,7 @@ canbus::Message StateMachine::upload(uint16_t objectId, uint8_t subId) const
 
 void StateMachine::declare(uint16_t objectId, uint8_t subId, uint32_t size)
 {
-    declareInternal(objectId, subId, size);
+    declareInternal(objectId, subId, size, true);
 }
 
 bool StateMachine::has(uint16_t objectId, uint8_t subId) const
@@ -211,7 +231,7 @@ uint32_t StateMachine::sizeOf(uint16_t objectId, uint8_t subId) const
     if (it == dictionary.end())
         return 0;
     else
-        return it->second.data.size();
+        return it->second.size;
 }
 
 base::Time StateMachine::timestamp(uint16_t objectId, uint8_t subId) const
@@ -237,7 +257,7 @@ canbus::Message StateMachine::download(uint16_t objectId, uint8_t subId, uint8_t
     if (knownSize && knownSize != size)
         throw ObjectSizeMismatch("attempting to write to a SDO object that has a mismatched size");
 
-    return makeSDOInitiateDomainDownload(nodeId, objectId, subId, data, size);
+    return makeSDOInitiateDomainDownload(nodeId, objectId, subId, data, size, !useUnknownSizes);
 }
 
 uint32_t StateMachine::get(uint16_t objectId, uint16_t subId, uint8_t* data, uint32_t bufferSize) const
@@ -247,10 +267,10 @@ uint32_t StateMachine::get(uint16_t objectId, uint16_t subId, uint8_t* data, uin
         return 0;
     if (it->second.lastUpdate.isNull())
         return 0;
-    uint32_t actualSize = it->second.data.size();
+    uint32_t actualSize = it->second.size;
     if (actualSize > bufferSize)
         throw BufferSizeTooSmall("buffer size too small in get()");
-    std::memcpy(data, it->second.data.data(), actualSize);
+    std::memcpy(data, it->second.data, actualSize);
     return actualSize;
 }
 

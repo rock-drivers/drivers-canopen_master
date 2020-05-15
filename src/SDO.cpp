@@ -20,7 +20,7 @@ canbus::Message canopen_master::makeSDOInitiateDomainUpload(uint8_t nodeId, uint
 
 canbus::Message canopen_master::makeSDOInitiateDomainDownload(
     uint8_t nodeId, uint16_t objectIndex, uint8_t objectSubindex,
-    uint8_t const* data, uint32_t size
+    uint8_t const* data, uint32_t size, bool sizeInData
 ) {
     if (size > 4) {
         throw Unsupported(
@@ -31,8 +31,14 @@ canbus::Message canopen_master::makeSDOInitiateDomainDownload(
     auto msg = canbus::Message::Zeroed();
     msg.can_id = FUNCTION_SDO_RECEIVE + nodeId;
     msg.size = 8;
+
     // Immediate transfer with size
-    msg.data[0] = 0x23 | ((4-size) << 2);
+    msg.data[0] = 0x22;
+    if (sizeInData) {
+        msg.data[0] |= (1 << 0);
+        msg.data[0] |= ((4 - size) << 2);
+    }
+
     toLittleEndian<uint16_t>(msg.data + 1, objectIndex);
     toLittleEndian<uint8_t>(msg.data + 3, objectSubindex);
     std::memcpy(msg.data + 4, data, size);

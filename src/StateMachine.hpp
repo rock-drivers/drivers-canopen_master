@@ -106,7 +106,9 @@ namespace canopen_master
             uint8_t subId;
 
             base::Time lastUpdate;
-            std::vector<uint8_t> data;
+            uint8_t data[4];
+            mutable uint8_t size;
+            mutable bool knownSize;
         };
 
         typedef std::map<ObjectIdentifier, ObjectValue> Dictionary;
@@ -120,10 +122,16 @@ namespace canopen_master
         PDOMappings rpdoMappings;
         PDOMappings tpdoMappings;
         Dictionary dictionary;
-        Dictionary::iterator declareInternal(uint16_t objectId, uint8_t subId, uint8_t size);
+        bool useUnknownSizes;
+        Dictionary::iterator declareInternal(
+            uint16_t objectId,
+            uint8_t subId,
+            uint8_t size,
+            bool knownSize
+        );
 
     public:
-        StateMachine(uint8_t nodeId);
+        StateMachine(uint8_t nodeId, bool useUnknownSizes = false);
 
         /** Returns the time of the last state update message received */
         base::Time getLastStateUpdate() const;
@@ -154,6 +162,12 @@ namespace canopen_master
 
         /** Returns the node ID this state machine is talking to */
         uint8_t getNodeID() const;
+
+        /** Returns whether data size field will be unset in SDO communications */
+        uint8_t getUseUnknownSizes() const;
+
+        /** Sets whether data size field will be unset in SDO communications */
+        void setUseUnknownSizes(bool toggle);
 
         /** Process a message received from nodeId */
         Update process(canbus::Message const& msg);
@@ -228,9 +242,15 @@ namespace canopen_master
             uint16_t size = get(objectId, subId, data, 4);
             if (size == 0)
                 throw ObjectNotRead("attempting to get an object that has never been read");
-            if (size != sizeof(T))
-                throw InvalidObjectType("unexpected requested object size in get");
 
+            const ObjectValue& object =
+                dictionary.find(ObjectIdentifier(objectId, subId))->second;
+            if (size != sizeof(T) && object.knownSize) {
+                throw InvalidObjectType("unexpected requested object size in get");
+            } else if (!object.knownSize) {
+                object.size = sizeof(T);
+                object.knownSize = true;
+            }
             return fromLittleEndian<T>(data);
         }
 
