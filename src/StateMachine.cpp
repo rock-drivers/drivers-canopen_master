@@ -5,6 +5,7 @@
 #include <canopen_master/NMT.hpp>
 #include <canopen_master/Exceptions.hpp>
 #include <canopen_master/Emergency.hpp>
+#include <canopen_master/Objects.hpp>
 #include <iostream>
 #include <cstring>
 #include <algorithm>
@@ -111,6 +112,10 @@ StateMachine::Update StateMachine::processEmergency(canbus::Message const& msg)
     if (em.code >> 8 == 0) // "No error" ????
         return Update(PROCESSED_EMERGENCY_NO_ERROR);
 
+    uint16_t objectId = ErrorRegister::OBJECT_ID;
+    uint16_t objectSubId = ErrorRegister::OBJECT_SUB_ID;
+
+    set<uint8_t>(objectId, objectSubId, msg.data[2]);
     throw EmergencyMessageReceived(em);
 }
 

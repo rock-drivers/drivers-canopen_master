@@ -2,6 +2,7 @@
 #include "gmock/gmock.h"
 #include <canopen_master/StateMachine.hpp>
 #include <canopen_master/SDO.hpp>
+#include <canopen_master/Objects.hpp>
 
 using namespace std;
 using namespace canopen_master;
@@ -73,7 +74,9 @@ TEST(StateMachine, processThrowsOnAnEmergencyMessage) {
     msg.can_id = 0x082;
     msg.data[0] = 0x10;
     msg.data[1] = 0x10;
+    msg.data[2] = 0xFA;
     ASSERT_THROW(machine.process(msg), EmergencyMessageReceived);
+    ASSERT_EQ(0xFA, machine.get<uint8_t>(ErrorRegister::OBJECT_ID, ErrorRegister::OBJECT_SUB_ID));
 }
 
 TEST(StateMachine, processDoesNotThrowOnAnEmergencyWithZeroCode) {
