@@ -23,6 +23,12 @@ namespace canopen_master
             uint16_t objectId;
             uint8_t  subId;
             uint8_t  size;
+
+            bool operator ==(MappedObject const& other) const {
+                return objectId == other.objectId &&
+                    subId == other.subId &&
+                    size == other.size;
+            }
         };
 
         uint8_t currentSize = 0;
