@@ -7,6 +7,8 @@
 #include <canopen_master/Frame.hpp>
 #include <canopen_master/PDOCommunicationParameters.hpp>
 #include <canopen_master/PDOMapping.hpp>
+
+#include <limits>
 #include <map>
 #include <vector>
 
@@ -249,18 +251,26 @@ namespace canopen_master {
             setObjectValue(objectId, subId, time, buffer, sizeof(value));
         }
 
+        uint32_t getObjectSize(uint16_t objectId, uint16_t subId) const;
+
         /** Get the currently known value for the given object */
         template <typename T> T get(uint16_t objectId, uint8_t subId) const
         {
-            uint8_t data[4];
+            uint8_t data[4] = { 0, 0, 0, 0 };
             uint16_t size = get(objectId, subId, data, 4);
             if (size == 0)
                 throw ObjectNotRead(
                     "attempting to get an object that has never been read");
 
+            // Extend `data` if the type is integral and signed
+            if (std::numeric_limits<T>::is_integer &&
+                std::numeric_limits<T>::is_signed) {
+                extendSignBit(data, size);
+            }
+
             const ObjectValue& object =
                 dictionary.find(ObjectIdentifier(objectId, subId))->second;
-            if (size != sizeof(T) && object.knownSize) {
+            if (size > sizeof(T) && object.knownSize) {
                 throw InvalidObjectType("unexpected requested object size in get");
             }
             else if (!object.knownSize) {
@@ -269,6 +279,8 @@ namespace canopen_master {
             }
             return fromLittleEndian<T>(data);
         }
+
+        static void extendSignBit(uint8_t* data, size_t dataSize);
 
         /** Disable a previously configured PDO */
         canbus::Message disablePDO(bool transmit,

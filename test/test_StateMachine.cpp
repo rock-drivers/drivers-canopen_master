@@ -185,9 +185,8 @@ TEST(StateMachine, set_and_get)
     ASSERT_EQ(time, machine.timestamp(0x12, 0x1));
 }
 
-TEST(StateMachine, getDefinesSizeOfObject)
+void setTestObject(StateMachine& machine, std::array<uint8_t, 4> data)
 {
-    StateMachine machine(2, true);
     canbus::Message msg;
     msg.time = base::Time::now();
     msg.can_id = 0x582;
@@ -195,18 +194,65 @@ TEST(StateMachine, getDefinesSizeOfObject)
     msg.data[1] = 0x01;
     msg.data[2] = 0x18;
     msg.data[3] = 0x03;
-    msg.data[4] = 0xEF;
-    msg.data[5] = 0xBE;
-    msg.data[6] = 0xFF;
-    msg.data[7] = 0xFF;
+    msg.data[4] = data[0];
+    msg.data[5] = data[1];
+    msg.data[6] = data[2];
+    msg.data[7] = data[3];
     machine.process(msg);
+}
+
+TEST(StateMachine, getDefinesSizeOfObject)
+{
+    StateMachine machine(2, true);
+    setTestObject(machine, {0xEF, 0xBE, 0xFF, 0xFF});
     ASSERT_EQ(0xBEEF, machine.get<uint16_t>(0x1801, 3));
+    ASSERT_EQ(2, machine.getObjectSize(0x1801, 3));
+}
+
+TEST(StateMachine, it_rejects_in_get_unsigned_integers_smaller_than_the_object_size)
+{
+    StateMachine machine(2, true);
+    setTestObject(machine, {0xEF, 0xBE, 0xFF, 0xFF});
     ASSERT_EQ(0xBEEF, machine.get<uint16_t>(0x1801, 3));
-    ASSERT_THROW(machine.get<uint32_t>(0x1801, 3), InvalidObjectType);
     ASSERT_THROW(machine.get<uint8_t>(0x1801, 3), InvalidObjectType);
 }
 
+TEST(StateMachine,
+    it_handles_in_get_unsigned_integers_bigger_than_the_object_size_with_the_most_significant_bit_set)
+{
+    StateMachine machine(2, true);
+    setTestObject(machine, {0xEF, 0x8E, 0xFF, 0xFF});
+    ASSERT_EQ(0x8EEF, machine.get<uint16_t>(0x1801, 3));
+    ASSERT_EQ(0x8EEF, machine.get<uint32_t>(0x1801, 3));
+}
+
+TEST(StateMachine,
+    it_handles_in_get_unsigned_integers_bigger_than_the_object_size_with_the_most_significant_bit_unset)
+{
+    StateMachine machine(2, true);
+    setTestObject(machine, {0xEF, 0x0E, 0x00, 0x00});
+    ASSERT_EQ(0xEEF, machine.get<uint16_t>(0x1801, 3));
+    ASSERT_EQ(0xEEF, machine.get<uint32_t>(0x1801, 3));
+}
+
+TEST(StateMachine, it_handles_in_get_negative_signed_integers_bigger_than_the_object_size)
+{
+    StateMachine machine(2, true);
+    setTestObject(machine, {0xEF, 0x8E, 0x00, 0x00});
+    ASSERT_EQ(-28945, machine.get<int16_t>(0x1801, 3));
+    ASSERT_EQ(-28945, machine.get<int32_t>(0x1801, 3));
+}
+
+TEST(StateMachine, it_handles_in_get_positive_signed_integers_bigger_than_the_object_size)
+{
+    StateMachine machine(2, true);
+    setTestObject(machine, {0xEF, 0x0E, 0xFF, 0xFF});
+    ASSERT_EQ(0xEEF, machine.get<int16_t>(0x1801, 3));
+    ASSERT_EQ(0xEEF, machine.get<int32_t>(0x1801, 3));
+}
+
 TEST(StateMachine, setRejectsZeroUpdateTime)
+
 {
     StateMachine machine(2);
     uint16_t value = 0x1234;

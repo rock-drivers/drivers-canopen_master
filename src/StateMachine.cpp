@@ -277,6 +277,17 @@ canbus::Message StateMachine::download(uint16_t objectId,
         !useUnknownSizes);
 }
 
+void StateMachine::extendSignBit(uint8_t* data, size_t objectSize)
+{
+    if ((data[objectSize - 1] & 0x80) == 0) {
+        return;
+    }
+
+    for (size_t i = objectSize; i < 4; ++i) {
+        data[i] = 0xff;
+    }
+}
+
 uint32_t StateMachine::get(uint16_t objectId,
     uint16_t subId,
     uint8_t* data,
@@ -292,6 +303,16 @@ uint32_t StateMachine::get(uint16_t objectId,
         throw BufferSizeTooSmall("buffer size too small in get()");
     std::memcpy(data, it->second.data, actualSize);
     return actualSize;
+}
+
+uint32_t StateMachine::getObjectSize(uint16_t objectId, uint16_t subId) const
+{
+    auto it = dictionary.find(ObjectIdentifier(objectId, subId));
+    if (it == dictionary.end())
+        return 0;
+    if (it->second.lastUpdate.isNull())
+        return 0;
+    return it->second.size;
 }
 
 canbus::Message StateMachine::getRPDOMessage(unsigned int pdoIndex)
