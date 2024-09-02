@@ -1,26 +1,26 @@
 #ifndef CANOPEN_MASTER_STATE_MACHINE_HPP
 #define CANOPEN_MASTER_STATE_MACHINE_HPP
 
-#include <map>
-#include <vector>
 #include <base/Time.hpp>
 #include <canmessage.hh>
-#include <canopen_master/Frame.hpp>
 #include <canopen_master/Exceptions.hpp>
-#include <canopen_master/PDOMapping.hpp>
+#include <canopen_master/Frame.hpp>
 #include <canopen_master/PDOCommunicationParameters.hpp>
+#include <canopen_master/PDOMapping.hpp>
 
-namespace canopen_master
-{
-    /** A state machine that handles data transfers between a CANOpen server and the master
+#include <limits>
+#include <map>
+#include <vector>
+
+namespace canopen_master {
+    /** A state machine that handles data transfers between a CANOpen server and the
+     * master
      */
-    class StateMachine
-    {
+    class StateMachine {
     public:
         typedef std::pair<uint16_t, uint8_t> ObjectIdentifier;
 
-        enum UPDATE_EVENT
-        {
+        enum UPDATE_EVENT {
             PROCESSED_IGNORED_MESSAGE,
             /** Message was not from the node handled by this StateMachine */
             PROCESSED_NOT_FOR_ME,
@@ -48,8 +48,7 @@ namespace canopen_master
             PDO_COBID_MESSAGE_RESERVED_BIT_QUIRK = 0x1
         };
 
-        struct Update
-        {
+        struct Update {
             UPDATE_EVENT mode;
             int update_count;
             ObjectIdentifier updated[8];
@@ -65,10 +64,11 @@ namespace canopen_master
              * Adds an object to the update set using a type representing the
              * dictionary object
              */
-            template<typename T>
-            void addUpdate(uint16_t objectIdOffset = 0, int8_t subIdOffset = 0) {
+            template <typename T>
+            void addUpdate(uint16_t objectIdOffset = 0, int8_t subIdOffset = 0)
+            {
                 return addUpdate(T::OBJECT_ID + objectIdOffset,
-                                 T::OBJECT_SUB_ID + subIdOffset);
+                    T::OBJECT_SUB_ID + subIdOffset);
             }
 
             /** Whether this update has updated objects */
@@ -78,19 +78,31 @@ namespace canopen_master
             bool hasUpdatedObject(uint16_t objectId, int8_t subId) const;
 
             /** Whether this update has updated objects */
-            template<typename T>
-            bool hasUpdatedObject(int objectIdOffset = 0,
-                                  int objectSubIdOffset = 0) const {
+            template <typename T>
+            bool hasUpdatedObject(int objectIdOffset = 0, int objectSubIdOffset = 0) const
+            {
                 return hasUpdatedObject(T::OBJECT_ID + objectIdOffset,
-                                        T::OBJECT_SUB_ID + objectSubIdOffset);
+                    T::OBJECT_SUB_ID + objectSubIdOffset);
             }
 
-            bool operator ==(Update const& other) const;
+            bool operator==(Update const& other) const;
 
-            ObjectIdentifier* begin() { return updated; }
-            ObjectIdentifier* end() { return updated + update_count; }
-            const ObjectIdentifier* begin() const { return updated; }
-            const ObjectIdentifier* end() const { return updated + update_count; }
+            ObjectIdentifier* begin()
+            {
+                return updated;
+            }
+            ObjectIdentifier* end()
+            {
+                return updated + update_count;
+            }
+            const ObjectIdentifier* begin() const
+            {
+                return updated;
+            }
+            const ObjectIdentifier* end() const
+            {
+                return updated + update_count;
+            }
         };
 
     private:
@@ -100,8 +112,7 @@ namespace canopen_master
 
         uint64_t quirks = 0;
 
-        struct ObjectValue
-        {
+        struct ObjectValue {
             uint16_t objectId;
             uint8_t subId;
 
@@ -123,12 +134,10 @@ namespace canopen_master
         PDOMappings tpdoMappings;
         Dictionary dictionary;
         bool useUnknownSizes;
-        Dictionary::iterator declareInternal(
-            uint16_t objectId,
+        Dictionary::iterator declareInternal(uint16_t objectId,
             uint8_t subId,
             uint8_t size,
-            bool knownSize
-        );
+            bool knownSize);
 
     public:
         StateMachine(uint8_t nodeId, bool useUnknownSizes = false);
@@ -179,10 +188,13 @@ namespace canopen_master
          *
          * @throw InvalidObjectType
          */
-        canbus::Message download(uint16_t objectId, uint8_t subId, uint8_t const* value, uint32_t size) const;
+        canbus::Message download(uint16_t objectId,
+            uint8_t subId,
+            uint8_t const* value,
+            uint32_t size) const;
 
         /** Request writing the given dictionary object */
-        template<typename T>
+        template <typename T>
         canbus::Message download(uint16_t objectId, uint8_t subId, T value) const
         {
             uint8_t data[4];
@@ -222,11 +234,16 @@ namespace canopen_master
         static canbus::Message sync();
 
         /** Get raw data from a given object */
-        uint32_t get(uint16_t objectId, uint16_t subId, uint8_t* data, uint32_t bufferSize) const;
+        uint32_t get(uint16_t objectId,
+            uint16_t subId,
+            uint8_t* data,
+            uint32_t bufferSize) const;
 
         /** Set an object's value in the dictionary */
-        template<typename T>
-        void set(uint16_t objectId, uint8_t subId, T value,
+        template <typename T>
+        void set(uint16_t objectId,
+            uint8_t subId,
+            T value,
             base::Time const& time = base::Time::now())
         {
             uint8_t buffer[sizeof(value)];
@@ -234,40 +251,56 @@ namespace canopen_master
             setObjectValue(objectId, subId, time, buffer, sizeof(value));
         }
 
+        uint32_t getObjectSize(uint16_t objectId, uint16_t subId) const;
+
         /** Get the currently known value for the given object */
-        template<typename T>
-        T get(uint16_t objectId, uint8_t subId) const
+        template <typename T> T get(uint16_t objectId, uint8_t subId) const
         {
-            uint8_t data[4];
+            uint8_t data[4] = { 0, 0, 0, 0 };
             uint16_t size = get(objectId, subId, data, 4);
             if (size == 0)
-                throw ObjectNotRead("attempting to get an object that has never been read");
+                throw ObjectNotRead(
+                    "attempting to get an object that has never been read");
+
+            // Extend `data` if the type is integral and signed
+            if (std::numeric_limits<T>::is_integer &&
+                std::numeric_limits<T>::is_signed) {
+                extendSignBit(data, size);
+            }
 
             const ObjectValue& object =
                 dictionary.find(ObjectIdentifier(objectId, subId))->second;
-            if (size != sizeof(T) && object.knownSize) {
+            if (size > sizeof(T) && object.knownSize) {
                 throw InvalidObjectType("unexpected requested object size in get");
-            } else if (!object.knownSize) {
+            }
+            else if (!object.knownSize) {
                 object.size = sizeof(T);
                 object.knownSize = true;
             }
             return fromLittleEndian<T>(data);
         }
 
+        static void extendSignBit(uint8_t* data, size_t dataSize);
+
         /** Disable a previously configured PDO */
-        canbus::Message disablePDO(bool transmit, uint8_t pdoIndex,
+        canbus::Message disablePDO(bool transmit,
+            uint8_t pdoIndex,
             uint32_t cob_id = 0) const;
 
         /** Configures a whole PDO */
-        std::vector<canbus::Message> configurePDO(bool transmit, uint8_t pdoIndex,
-            PDOCommunicationParameters const& parameters, PDOMapping const& mapping) const;
+        std::vector<canbus::Message> configurePDO(bool transmit,
+            uint8_t pdoIndex,
+            PDOCommunicationParameters const& parameters,
+            PDOMapping const& mapping) const;
 
         /** Configure the communication parameters for the given PDO */
-        std::vector<canbus::Message> configurePDOParameters(bool transmit, uint8_t pdoIndex,
+        std::vector<canbus::Message> configurePDOParameters(bool transmit,
+            uint8_t pdoIndex,
             PDOCommunicationParameters const& parameters) const;
 
         /** Configures the mapping for one of the predefined PDOs */
-        std::vector<canbus::Message> configurePDOMapping(bool transmit, uint8_t pdoIndex,
+        std::vector<canbus::Message> configurePDOMapping(bool transmit,
+            uint8_t pdoIndex,
             PDOMapping const& mapping) const;
 
         /** Declare a TPDO mapping to the state machine
@@ -298,10 +331,15 @@ namespace canopen_master
         Update processSDOReceive(canbus::Message const& msg);
         Update processHeartbeat(canbus::Message const& msg);
         Update processPDOReceive(int pdoIndex, canbus::Message const& msg);
-        void setObjectValue(uint16_t objectId, uint8_t subId, base::Time const& time, uint8_t const* data, uint32_t dataSize);
+        void setObjectValue(uint16_t objectId,
+            uint8_t subId,
+            base::Time const& time,
+            uint8_t const* data,
+            uint32_t dataSize);
 
         /** Helper method for declareTPDOMapping and declareRPDOMapping */
-        void declarePDOMapping(uint8_t pdoIndex, PDOMapping const& mapping,
+        void declarePDOMapping(uint8_t pdoIndex,
+            PDOMapping const& mapping,
             std::vector<PDOMapping>& mappings);
     };
 }
