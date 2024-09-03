@@ -199,6 +199,7 @@ int main(int argc, char** argv)
         device->setReadTimeout(2000);
         canbus::Message msg = device->read();
         std::cout << msg.time << " size=" << (int)msg.size;
+        std::cout << " can_id=0x" << hex << msg.can_id;
         for (int i = 0; i < msg.size; ++i)
             std::cout << " " << hex << (int)msg.data[i];
         std::cout << std::endl;
