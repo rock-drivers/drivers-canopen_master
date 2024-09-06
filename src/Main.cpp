@@ -198,9 +198,13 @@ int main(int argc, char** argv)
     else if (cmd == "read") {
         device->setReadTimeout(2000);
         canbus::Message msg = device->read();
-        std::cout << msg.time << " size=" << (int)msg.size;
+        std::cout
+            << msg.time << " size=" << (int)msg.size
+            << " function=0x" << hex << getFunctionCode(msg)
+            << " node=0x" << hex << getNodeID(msg)
+            << " data";
         for (int i = 0; i < msg.size; ++i)
-            std::cout << " " << hex << (int)msg.data[i];
+            std::cout << " 0x" << hex << (int)msg.data[i];
         std::cout << std::endl;
     }
     else {
